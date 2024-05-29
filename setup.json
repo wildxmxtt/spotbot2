@@ -1,0 +1,8 @@
+{
+    "client_id": "client_id",
+    "client_secret": "client_secret",
+    "discord_token": "discord_token",
+    "playlist_link": "https://open.spotify.com/playlist/4UOkZoy3ACMfNxEZuWgTg1?si=Wpf7uygcSZe2hqv15QtacA",
+    "discord_channel": 0,
+    "grab_past_flag": 0
+}

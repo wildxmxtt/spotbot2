@@ -162,3 +162,4 @@ cython_debug/
 #.idea/
 setup.json
 setup.json
+spotify.json

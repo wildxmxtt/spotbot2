@@ -1,4 +1,4 @@
-from flask import Flask, request, url_for, session, redirect
+from flask import Flask, request, url_for, session, redirect, render_template
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import time
@@ -22,6 +22,10 @@ with open('setup.json', 'r') as setupf:
     client_id = (data['client_id'])
     client_secret = (data['client_secret'])
     playlist_link = (data['playlist_link'])
+
+    print("This is client_id " + client_id)
+    print("This is client_secret " + client_secret)
+    print("This is playlist_link " + playlist_link)
 
 #do this function above twice
 
@@ -82,8 +86,8 @@ def getTracks():
     print("TIMESTAMP:" + str(datetime.now()))
     open('uri.txt', 'w+').close() #ensures uri.txt is empty
     print("uri.txt has been reset")
-    
-    return spotifyRQ1
+    #return render_template('index.html')
+    return "The amount of songs you have in this playlist is: " + spotifyRQ1 
 
 #this function will get us a new token if ours expires 
 #also ensures that there is token data & if there is not it will

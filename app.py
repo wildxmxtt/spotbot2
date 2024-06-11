@@ -87,7 +87,8 @@ def getTracks():
     open('uri.txt', 'w+').close() #ensures uri.txt is empty
     print("uri.txt has been reset")
     #return render_template('index.html')
-    return "The amount of songs you have in this playlist is: " + spotifyRQ1 
+    return render_template('index.html', num_songs=spotifyRQ1)
+    #return "The amount of songs you have in this playlist is: " + spotifyRQ1 
 
 #this function will get us a new token if ours expires 
 #also ensures that there is token data & if there is not it will

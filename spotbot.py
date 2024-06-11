@@ -1,5 +1,6 @@
 from discord.ext import commands
 import re
+import sqlite3
 import discord
 from datetime import datetime
 import json
@@ -50,31 +51,32 @@ async def sLink(ctx):
 #a request command to give the user back a random song from the playlist 
 @bot.command()
 async def r(ctx): 
-    file = open("playlist.txt", "r") #Opens the playlist.txt file 
-    count = 0
-    for line in file:
-        #print(line)
-        count +=1
+    # Connect to the SQLite Database
+    conn = sqlite3.connect('spotbot.db')
+    cur = sqlite3.cursor()
 
-    print("amt of songs in playlist.txt: " + str(count))
-    requestNum = random.randint(0,count-1)
-    print("number generated: " + str(requestNum))
-    with open("playlist.txt", 'r') as fp:
-        # lines to read
-        line_numbers = [requestNum, count]
-        # To store lines
-        lines = []
-        for i, line in enumerate(fp):
-            # read from line 0 and the len of the text file
-            if i in line_numbers:
-                lines.append(line.strip())
-            elif i > count:
-                # don't read after line 7 to save time
-                break
-    pre = str(lines)[1:-1] #removes square bracket
-    random_song = pre[1:-1] #removes '' from front and back of the text 
-    print("The random song you got was: " + pre)
-    await ctx.reply("The random song you got was: " + random_song)
+    # Get the number of total songs in the playlist
+    cur.execute('SELECT COUNT(*) FROM songs')
+    count = cur.fetchone()[0]
+
+    print(f"There are {count} song IDs in the songs table.")
+
+    # Get all spotify_IDs from the songs table
+    cur.execute('SELECT spotify_ID FROM songs')
+    spotify_ids = [row[0] for roe in c.cur.fetchall()]
+
+    # if there are songs
+    if spotify_ids:
+        # get a random id
+        random_song = random.choice(spotify_ids)
+        print(f"The random song you got was: {random_song}")
+        await ctx.reply(f"The random song you got was: {random_song}")
+    else:
+        print(f"There are no songs yet.")
+        await ctx.reply(f"There are no songs yet.")
+
+    # Close the connection
+    conn.close()
 
 
 

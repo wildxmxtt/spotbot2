@@ -18,7 +18,13 @@ with open('setup.json', 'r') as setupf:
     playlist_link = data['playlist_link']
 
 @app.route('/')
-def login():
+def index():
+    num_songs = '(if you are reading this, it means you have to click the "Link Spotify" Button)'
+    timestamp = ''
+    return render_template('index.html', num_songs=num_songs, timestamp=timestamp)
+
+@app.route('/link_spotify')
+def link_spotify():
     sp_oauth = create_spotify_oauth()
     auth_url = sp_oauth.get_authorize_url()
     return redirect(auth_url)
@@ -39,7 +45,7 @@ def getTracks():
         token_info = get_token()
     except:
         print("user not logged in")
-        return redirect(url_for('login', _external=False))
+        return redirect(url_for('index'))
 
     sp = spotipy.Spotify(auth=token_info['access_token'])
 
@@ -64,7 +70,7 @@ def getTracks():
     
     open('uri.txt', 'w+').close()
     print("uri.txt has been reset")
-
+    spotifyRQ1 = spotifyRQ1 + " SUCCESS Spotify has been linked!"
     return render_template('index.html', num_songs=spotifyRQ1, timestamp=timestamp)
 
 @app.route('/close_app', methods=['POST'])
@@ -75,6 +81,10 @@ def close_app():
 @app.route('/continue_setup', methods=['POST'])
 def continue_setup():
     return render_template('setup.html')
+
+@app.route('/advanced_setup')
+def advanced_setup():
+    return render_template('advanced_setup.html')
 
 def shutdown_server():
     func = request.environ.get('werkzeug.server.shutdown')

@@ -2,19 +2,23 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Spotify Playolst Info</title>
+    <title>Spotify Playlist Info</title>
 </head>
 <body>
     <h1>Continued Setup</h1>
     <p>Welcome to the Setup Page for our steps it will be like this</p>
-    <p></p>
-    <ol>1. Set up Spotify Side</ol>
-    <ol>2. Set Discord Side</ol>
-    <ol>3. Customize install</ol>
-    <ol>4. Deploy</ol>
-    <p>#1: First Spotify, Please go to: link here and create an app</p>
-    <p></p>
+    <ol>
+        <li>Set up Spotify Side</li>
+        <li>Set Discord Side</li>
+        <li>Customize install</li>
+        <li>Deploy</li>
+        <li>Advanced Setup</li>
+    </ol>
+    <p>#1: First Spotify, Please go to: <a href="https://developer.spotify.com/">Spotify Developer Webpage</a></p>
     <p>You do this by blah blah blah</p>
-
+    <p>#5: If you are looking to do an advanced setup please click here</p>
+    <form action="{{ url_for('advanced_setup') }}" method="get">
+        <button type="submit">Advanced Setup Page</button>
+    </form>
 </body>
 </html>

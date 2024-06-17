@@ -6,12 +6,17 @@
 </head>
 <body>
     <h1>Spotify Playlist Info</h1>
-    <p>The amount of songs in the playlist are: {{ num_songs }}</p>
-    <form action="{{ url_for('close_app') }}" method="post">
-        <button type="submit">Close App</button>
+    <p>The amount of songs in the playlist are: {{ num_songs }} </p>
+    <form action="{{ url_for('link_spotify') }}" method="get">
+        <button type="submit">Link Spotify</button>
     </form>
+
     <form action="{{ url_for('continue_setup') }}" method="post">
         <button type="submit">Continue Setup</button>
+    </form>
+
+    <form action="{{ url_for('close_app') }}" method="post">
+        <button type="submit">Close App</button>
     </form>
 </body>
 </html>

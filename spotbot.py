@@ -143,7 +143,7 @@ async def on_message(msg):
 #checks for duplicates before sending songs off to uri.txt
 def dupCheck(link):
     string1 = link
-    # opening a text files
+    # opening a text files (old)
     try:
         file = open("playlist.txt", "r") # I am changing the name to playlist as it makes more sense in my head this could be a problem later so revert if needed.
     except FileNotFoundError:
@@ -151,6 +151,28 @@ def dupCheck(link):
         file = open("playlist.txt", "x")
         file.close()
         file = open("playlist.txt", "r")
+
+    # opening a text files (new)
+    conn = sqlite3.connect('spotbot.db')
+    cur = sqlite3.cursor()
+
+    # Separate the string to the spotify ID
+    sep = '?'
+    stripped = string1.split(sep, 1)[0]
+
+    # Attempt to select spotify_ID
+    cur.execute(f"SELECT spotify_ID FROM songs WHERE spotify_ID is {stripped}")
+    matches = cur.fetchone()
+
+    # If a match is found
+    if matches:
+        print(pgrm_signature + 'String', string1, 'Found In Line database')
+        print(pgrm_signature + "DUPLICATE LINK FOUND, NOT ADDED TO PLAYLIST FILE")
+        # closing connection
+        conn.close()
+        return True
+    else:
+
 
     # setting flag and index to 0
     flag = 0

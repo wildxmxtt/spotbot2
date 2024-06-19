@@ -143,91 +143,34 @@ async def on_message(msg):
 #checks for duplicates before sending songs off to uri.txt
 def dupCheck(link):
     string1 = link
-    # opening a text files (old)
-    try:
-        file = open("playlist.txt", "r") # I am changing the name to playlist as it makes more sense in my head this could be a problem later so revert if needed.
-    except FileNotFoundError:
-        #make it create then open the file if the file does not exits
-        file = open("playlist.txt", "x")
-        file.close()
-        file = open("playlist.txt", "r")
-
+    
     # opening a text files (new)
     conn = sqlite3.connect('spotbot.db')
     cur = sqlite3.cursor()
 
-    # Separate the string to the spotify ID
+    # Separate the string supplied to just the spotify ID
+    # are the same song:
+    # https://open.spotify.com/track/2XgTw2co6xv95TmKpMcL70?si=dbe7fd4a016344ec
+    # https://open.spotify.com/track/2XgTw2co6xv95TmKpMcL70?si=8fe74b50ad804b52
     sep = '?'
     stripped = string1.split(sep, 1)[0]
 
     # Attempt to select spotify_ID
-    cur.execute(f"SELECT spotify_ID FROM songs WHERE spotify_ID is {stripped}")
+    # input sanitization - https://realpython.com/prevent-python-sql-injection/
+    cur.execute("SELECT spotify_ID FROM songs WHERE spotify_ID = %s'," (stripped, )) # sanitized input?
     matches = cur.fetchone()
 
     # If a match is found
     if matches:
-        print(pgrm_signature + 'String', string1, 'Found In Line database')
+        print(pgrm_signature + 'String', string1, 'Found In song database')
         print(pgrm_signature + "DUPLICATE LINK FOUND, NOT ADDED TO PLAYLIST FILE")
-        # closing connection
-        conn.close()
         return True
-    else:
-
-
-    # setting flag and index to 0
-    flag = 0
-    index = 0
-
-    # Loop through the file line by line
-    for line in file:
-        index += 1
-        print("Song" + str(index) + ": " +line)
-        #are the same song:
-        #https://open.spotify.com/track/2XgTw2co6xv95TmKpMcL70?si=dbe7fd4a016344ec
-        #https://open.spotify.com/track/2XgTw2co6xv95TmKpMcL70?si=8fe74b50ad804b52
-        
-        sep = '?' #where to seperate
-        stripped = string1.split(sep, 1)[0]
-
-        #print("Stripped: "+ str(index) +": " + stripped)
-
-        if stripped in str(line):
-            flag = 1
-            break
-
-        if string1.split("\n", 1)[0] in line: 
-            flag = 1
-            break
-
-    print(flag)
-    #swap file operation to append
-    file.close()
-
-    file = open("playlist.txt", "a")
-
-
-    # checking condition for string found or not
-    if flag == 0:
+    else: # If a match is not found
         print(pgrm_signature + 'String', string1 , 'Not Found')
-        
-        songToWrite = str(link)
-
-        if "," in songToWrite:
-            songToWrite = songToWrite.split(",", 1)[0]
-        
-        file.write(songToWrite + "\n") # Changed to making every new song go to its own line for later reading simplicity
-        print(pgrm_signature + "playlist file has been written to succesfully")
-        file.close()
-        uritxt(songToWrite)
-        return False
-    else:
-        print(pgrm_signature + 'String', string1, 'Found In Line', index, ' in playlist.txt')
-        # closing text file	
-        print(pgrm_signature + "DUPLICATE LINK FOUND, NOT ADDED TO PLAYLIST FILE")
-        file.close()
-        return True
-    #commit me 
-
+        cur.execute("INSERT INTO songs (spotify_ID, sender_ID) VALUES (?, ?)", (stripped, 1))
+        conn.commit()
+    
+    conn.close()
 
 def uritxt(link):
     #opens up the setup.json file
@@ -238,22 +181,32 @@ def uritxt(link):
     print(pgrm_signature + "Writting to uri.txt..... \n")
     
     if(grab_past_flag == 0):
+        # new code
         print("WARNING GRAB PAST FLAG IS SET TO ZERO, MAKE SURE THIS IS SET TO 1 IF YOU DONT HAVE ANY SONGS YOU NEED TO GET FROM THE PAST")
         print(pgrm_signature + "Writting to uri.txt.....: \n")
-        file = open("playlist.txt", "r+")
+
+        # connect to the database
+        conn = sqlite3.connect('spotbot.db')
+        cur = sqlite3.cursor()
+
+        # Select all spotify IDs
+        cur.execute("Select spotify_ID FROM songs")
+        rline = cur.fetchall() # retreive all spotify IDs and store in readlines
+
+        print("WARNING GRAB PAST FLAG IS SET TO ZERO, MAKE SURE THIS IS SET TO 1 IF YOU DONT HAVE ANY SONGS YOU NEED TO GET FROM THE PAST")
+        print(pgrm_signature + "Writting to uri.txt.....: \n")
+
+        # Prepare to write the spotify IDs to the uri.txt file
         file1 = open("uri.txt", "w+")
-        count = 0
-        rline = file.readlines()
     
-    #chops it up into uri format
         for line in rline:
-            count += 1 
-            #replace x, with y
-            #line.replace(x,y)
-            fline = line.replace("https://open.spotify.com/track/", "spotify:track:")
-            file1.write(fline.split("?si")[0] + "\n") #cuts off exess info from the uri and writes it to the file
+            # Adds expected format to begingin of the spotify ID and writes to the file
+            file1.write = "spotify:track:" + line + "\n"
+
+        # Send status, close the connection and file
         print(pgrm_signature + "uri.txt has been written to")
         file1.close()
+        conn.close()
         
     else:
         file1 = open("uri.txt", "w+")

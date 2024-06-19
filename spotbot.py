@@ -219,7 +219,6 @@ def uritxt(link):
         file1.write(fline2 + "\n") #cuts off exess info from the uri and writes it to the file
 
         file1.close()
-        count = 0
 
         print(pgrm_signature + "Uri text file written to succesfully!\n")
         print(pgrm_signature + "Sending songs off to spotify")

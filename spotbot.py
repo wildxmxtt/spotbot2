@@ -53,7 +53,7 @@ async def sLink(ctx):
 async def r(ctx): 
     # Connect to the SQLite Database
     conn = sqlite3.connect('spotbot.db')
-    cur = sqlite3.cursor()
+    cur = conn.cursor()
 
     # Get the number of total songs in the playlist
     cur.execute('SELECT COUNT(*) FROM songs')
@@ -146,7 +146,7 @@ def dupCheck(link):
     
     # opening a text files (new)
     conn = sqlite3.connect('spotbot.db')
-    cur = sqlite3.cursor()
+    cur = conn.cursor()
 
     # Separate the string supplied to just the spotify ID
     # are the same song:
@@ -157,7 +157,8 @@ def dupCheck(link):
 
     # Attempt to select spotify_ID
     # input sanitization - https://realpython.com/prevent-python-sql-injection/
-    cur.execute("SELECT spotify_ID FROM songs WHERE spotify_ID = %s'," (stripped, )) # sanitized input?
+    #cur.execute("SELECT spotify_ID FROM songs WHERE spotify_ID = ?'," (stripped, )) # sanitized input?
+    cur.execute("SELECT spotify_ID FROM songs WHERE spotify_ID = ?", (stripped,))
     matches = cur.fetchone()
 
     # If a match is found
@@ -187,7 +188,7 @@ def uritxt(link):
 
         # connect to the database
         conn = sqlite3.connect('spotbot.db')
-        cur = sqlite3.cursor()
+        cur = conn.cursor()
 
         # Select all spotify IDs
         cur.execute("Select spotify_ID FROM songs")

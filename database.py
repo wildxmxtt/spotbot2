@@ -17,26 +17,13 @@ cur = conn.cursor()
 #              (sender_ID INTEGER PRIMARY KEY, username TEXT)''')
 
 # Get a list of tables in the database
-cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
-tables = cur.fetchall()
+# cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
+# tables = cur.fetchall()
 
-# Print the table names
-if tables:
-    print("Tables in the database:")
-    for table in tables:
-        table_name = table[0]
-        print(f"\nTable: {table_name}")
-
-        # Get the column names for the current table
-        cur.execute(f"PRAGMA table_info({table_name});")
-        columns = cur.fetchall()
-
-        # Print the column names
-        print("Columns:")
-        for column in columns:
-            column_name = column[1]
-            print(f"- {column_name}")
-else:
-    print("No tables found in the database.")
+# Get all of the spotify IDs in the db
+cur.execute("SELECT spotify_ID FROM songs")
+songs = cur.fetchall()
+for song in songs:
+    print(song)
 
 conn.close()

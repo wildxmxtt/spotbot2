@@ -21,7 +21,7 @@ cur = conn.cursor()
 # tables = cur.fetchall()
 
 # Get all of the spotify IDs in the db
-cur.execute("SELECT spotify_ID FROM songs")
+cur.execute("DELETE FROM songs")
 songs = cur.fetchall()
 for song in songs:
     print(song)

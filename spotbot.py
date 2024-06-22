@@ -215,9 +215,11 @@ def uritxt(link):
         song = str(link)
 
         #chops it up into uri format
-        fline = song.replace("https://open.spotify.com/track/", "spotify:track:")
-        fline2 = fline.split("?", 1)[0]
-        file1.write(fline2 + "\n") #cuts off exess info from the uri and writes it to the file
+        formattedLine = song.replace("https://open.spotify.com/track/", "spotify:track:")
+        formattedLine2 = formattedLine.split("?", 1)[0]
+        print(f"{pgrm_signature} DEBUG: {formattedLine} AND {formattedLine2}")
+        file1.write(formattedLine2 + "\n") #cuts off exess info from the uri and writes it to the file
+        print(f"These have been written to the uri.txt file")
 
         file1.close()
 
@@ -238,7 +240,7 @@ def update_gp_flag():
         dictObj = json.load(fp)
     
         # "grab_past_flag" : 0
-        dictObj.update({"grab_past_flag": 1 })
+        dictObj.update({"grab_past_flag": 1})
     
         with open(filename, 'w') as json_file:
             json.dump(dictObj, json_file, 

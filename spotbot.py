@@ -63,7 +63,7 @@ async def r(ctx):
 
     # Get all spotify_IDs from the songs table
     cur.execute('SELECT spotify_ID FROM songs')
-    spotify_ids = [row[0] for roe in c.cur.fetchall()]
+    spotify_ids = [row[0] for row in cur.fetchall()]
 
     # if there are songs
     if spotify_ids:
@@ -73,7 +73,7 @@ async def r(ctx):
         await ctx.reply(f"The random song you got was: {random_song}")
     else:
         print(f"There are no songs yet.")
-        await ctx.reply(f"There are no songs yet.")
+        await ctx.reply("There are no songs yet. A random song cannot be retrieved.")
 
     # Close the connection
     conn.close()

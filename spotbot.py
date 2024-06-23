@@ -171,6 +171,8 @@ def dupCheck(link):
         cur.execute("INSERT INTO songs (spotify_ID, sender_ID) VALUES (?, ?)", (stripped, 1))
         conn.commit()
     
+    uritxt(link)
+    
     conn.close()
 
 def uritxt(link):

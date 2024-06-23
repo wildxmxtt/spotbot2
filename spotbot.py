@@ -172,7 +172,7 @@ def dupCheck(link):
         conn.commit()
     
     uritxt(link)
-    
+
     conn.close()
 
 def uritxt(link):
@@ -183,6 +183,8 @@ def uritxt(link):
 
     print(pgrm_signature + "Writting to uri.txt..... \n")
     
+    song = str(link)
+
     if(grab_past_flag == 0):
         # new code
         print("WARNING GRAB PAST FLAG IS SET TO ZERO, MAKE SURE THIS IS SET TO 1 IF YOU DONT HAVE ANY SONGS YOU NEED TO GET FROM THE PAST")
@@ -204,7 +206,9 @@ def uritxt(link):
     
         for line in rline:
             # Adds expected format to begingin of the spotify ID and writes to the file
-            file1.write = "spotify:track:" + line + "\n"
+            print(f"{pgrm_signature}: TESTING the line in rlines is {line}")
+            formattedLine = line.replace("https://open.spotify.com/track/", "spotify:track:")
+            file1.write(formattedLine.split("?si")[0] + "\n") #cuts off exess info from the uri and writes it to the file
 
         # Send status, close the connection and file
         print(pgrm_signature + "uri.txt has been written to")
@@ -213,8 +217,6 @@ def uritxt(link):
         
     else:
         file1 = open("uri.txt", "w+")
-
-        song = str(link)
 
         #chops it up into uri format
         formattedLine = song.replace("https://open.spotify.com/track/", "spotify:track:")

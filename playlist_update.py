@@ -15,7 +15,7 @@ def sendOff():
         playlist_link = (data['playlist_link']) 
         client_id = (data['client_id'])
         client_secret = (data['client_secret'])
-    #open('spotify.json', 'w+').close() #clears old token info if there is any
+    open('spotify.json', 'w+').close() #clears old token info if there is any
 
     file1 = open("spotify.json", "a") #prepares file to be written to 
 

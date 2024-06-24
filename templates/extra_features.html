@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Extra Features</title>
+    <script>
+        function showPopup(message) {
+            alert(message);
+        }
+    </script>
+</head>
+<body>
+    <h1>Extra Features</h1>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <script>
+                showPopup("{{ messages[0] }}");
+            </script>
+        {% endif %}
+    {% endwith %}
+    <form action="{{ url_for('extra_features') }}" method="post">
+        <p>Select features to install:</p>
+        {% for feature, installed in installed_features.items() %}
+            <label>
+                <input type="checkbox" name="features" value="{{ feature }}"
+                       {% if installed %}checked{% endif %}>
+                {{ feature }}
+            </label><br>
+        {% endfor %}
+        <br><br>
+        <button type="submit">Install Features</button>
+    </form>
+    <br>
+    <button onclick="window.history.back()">Previous</button>
+</body>
+</html>

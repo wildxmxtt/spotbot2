@@ -10,8 +10,7 @@
     </script>
 </head>
 <body>
-    <h1>Spotbot2 Advanced Setup</h1>
-    <h2>This page is to update the setup.json file (the brains of the opperation)</h2>
+    <h1>Advanced Setup</h1>
     {% with messages = get_flashed_messages() %}
         {% if messages %}
             <script>
@@ -19,7 +18,7 @@
             </script>
         {% endif %}
     {% endwith %}
-    <form action="{{ url_for('save_advanced_setup') }}" method="post">
+    <form action="{{ url_for('advanced_setup') }}" method="post">
         <label for="client_id">Spotify Client ID:</label>
         <input type="text" id="client_id" name="client_id" value="{{ client_id }}" required><br><br>
         
@@ -34,16 +33,29 @@
         
         <label for="discord_channels">Discord Channel ID(s) (comma-separated):</label>
         <input type="text" id="discord_channels" name="discord_channels" value="{{ discord_channels }}" required><br><br>
+        <br><br>
+        <h3>Descriptions</h3> 
+        <label>Spotify Client ID: Public Identifier for Spotify Application</label> <br><br>
+        <label>Spotify Client Secret: Secret Identifier for Spotify Application, your access to the application</label> <br><br>
+        <label>Discord Token: Token to run your Discord bot running Spotbot2 code (Spotbot.py)</label>  <br><br>
+        <label>Playlist Links: Your Spotify Playlist Links where you want Spotbot2 to point to</label> <br><br>
+        <label>Discord Channels: Which Discord channels you want Spotbot2 to read</label>  <br><br> <br><br>
 
-
-        <button type="submit">Save/Update</button> <br><br>
+        <h3>Extra Features</h3>
+        <p>Select features to install:</p>
+        {% for feature, installed in installed_features.items() %}
+            <label>
+                <input type="checkbox" name="features" value="{{ feature }}"
+                       {% if installed %}checked{% endif %}>
+                {{ feature }}
+            </label><br>
+        {% endfor %}
+        
+        <br>
+        <button type="submit">Save/Update</button>
     </form>
+    <br>
+    <button onclick="window.history.back()">Previous</button>
     <br><br>
-    <h3>Descriptions</h3> 
-    <label>Spotify Client ID: Public Identifer for Spotify Application</label> <br><br>
-    <label>Spotify Client Secret: Secret Identifer for Spotify Application, your access to the applciation</label> <br><br>
-    <label>Discord Token: Token to run your Discord bot running Spotbot2 code (Spotbot.py)</label>  <br><br>
-    <label>Playlist Links: Your Spotify Playlist Links where you want Spotbot2 to point to</label> <br><br>
-    <label>Discord Channels: Which Discord channels you want Spotbot2 to read</label>  <br><br> <br><br>
 </body>
 </html>

@@ -14,11 +14,40 @@
         <li>Deploy</li>
         <li>Advanced Setup</li>
     </ol>
-    <p>#1: First Spotify, Please go to: <a href="https://developer.spotify.com/">Spotify Developer Webpage</a></p>
-    <p>You do this by blah blah blah</p>
-    <p>#5: If you are looking to do an advanced setup please click here</p>
+    <p>If you know what to do / have it done & are looking to do an advanced setup please click here</p>
+    <form action="{{ url_for('index') }}" method="get">
+        <button type="submit">Previous</button>
+    </form>
     <form action="{{ url_for('advanced_setup') }}" method="get">
         <button type="submit">Advanced Setup Page</button>
     </form>
+    <p>#1: Spotify Setup </p>
+    <ul>Please go to: <a href="https://developer.spotify.com/dashboard">Spotify Developer Webpage</a></ul>
+    <ul>You need to click login at the top right hand corner of the page </ul>
+    <ul>After logging in with your Spotify account, you want to select create app</ul>
+    <ul>Once your app has been created you need to give it:</ul>
+    <ol>
+        <li>App Name</li>
+        <li>App Description</li>
+        <li>Redirect URI's</li>
+        <p>For the Redirect URIs please use the following, copy and paste one by one, ensure to click add on the dev portal</p>
+        <p>http://127.0.0.1:5000/</p>
+        <p>http://127.0.0.1:5000/redirect</p>
+        <p>http://localhost:5000/callback/</p>
+        <p>http://localhost:5000/redirect</p>
+        <p>http://localhost:5000/redirect/</p>
+        <p>http://127.0.0.1:5000/callback</p>
+        <p>http://localhost:5000/callback</p>
+        <li>Then select the Web API checkbox, this is the only API you will need</li>
+        <li>Then read and agree with the dev terms of service, and then click save</li>
+        <li>Next after clicking save, click on settings</li>
+        <li>Copy the Client ID & copy and paste it here:</li>
+        <form action="{{ url_for('save_setup') }}" method="post">
+            <input type="text" id="client_id" name="client_id" required><br><br>
+            <li>View the Client Secret & copy and paste it here:</li>
+            <input type="text" id="client_secret" name="client_secret" required><br><br>
+            <button type="submit">Save</button>
+        </form>
+    </ol>
 </body>
 </html>

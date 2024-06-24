@@ -11,25 +11,14 @@ app.secret_key = "SECRERET"
 app.config['SESSION_COOKIE_NAME'] = 'Matts_Cookie'
 TOKEN_INFO = "token_info"
 
-# Load setup data
-def load_setup():
-    with open('setup.json', 'r') as setupf:
-        return json.load(setupf)
-
-# Save setup data
-def save_setup(data):
-    with open('setup.json', 'w') as setupf:
-        json.dump(data, setupf, indent=4)
-
-# Load initial setup data
-setup_data = load_setup()
-client_id = setup_data['client_id']
-client_secret = setup_data['client_secret']
-playlist_link = setup_data['playlist_link']
+with open('setup.json', 'r') as setupf:
+    data = json.load(setupf)
+    client_id = data['client_id']
+    client_secret = data['client_secret']
+    playlist_link = data['playlist_link']
 
 @app.route('/')
 def index():
-    # Initialize variables to avoid errors if not set
     num_songs = '(if you are reading this, it means you have to click the "Link Spotify" Button)'
     timestamp = ''
     return render_template('index.html', num_songs=num_songs, timestamp=timestamp)
@@ -93,29 +82,35 @@ def close_app():
 def continue_setup():
     return render_template('setup.html')
 
-@app.route('/advanced_setup', methods=['GET'])
+@app.route('/advanced_setup', methods=['GET', 'POST'])
 def advanced_setup():
-    setup_data = load_setup()
-    return render_template('advanced_setup.html', 
-                           client_id=setup_data.get('client_id', ''), 
-                           client_secret=setup_data.get('client_secret', ''), 
-                           discord_token=setup_data.get('discord_token', ''), 
-                           playlist_links=setup_data.get('playlist_link', ''), 
-                           discord_channels=setup_data.get('discord_channel', ''))
+    if request.method == 'POST':
+        data['client_id'] = request.form['client_id']
+        data['client_secret'] = request.form['client_secret']
+        data['discord_token'] = request.form['discord_token']
+        data['playlist_links'] = request.form['playlist_links']
+        data['discord_channels'] = request.form['discord_channels']
+        
+        with open('setup.json', 'w') as setupf:
+            json.dump(data, setupf)
+        flash('Setup file updated!')
+        return redirect(url_for('advanced_setup'))
+    
+    return render_template('advanced_setup.html', **data)
 
-@app.route('/save_advanced_setup', methods=['POST'])
-def save_advanced_setup():
-    setup_data = {
-        'client_id': request.form['client_id'],
-        'client_secret': request.form['client_secret'],
-        'discord_token': request.form['discord_token'],
-        'playlist_link': request.form['playlist_links'],
-        'discord_channel': request.form['discord_channels'],
-        'grab_past_flag': 1
-    }
-    save_setup(setup_data)
-    flash('Settings updated successfully!')
-    return redirect(url_for('advanced_setup'))
+@app.route('/save_setup', methods=['POST'])
+def save_setup():
+    client_id = request.form['client_id']
+    client_secret = request.form['client_secret']
+    
+    data['client_id'] = client_id
+    data['client_secret'] = client_secret
+    
+    with open('setup.json', 'w') as setupf:
+        json.dump(data, setupf)
+    
+    flash('Setup file updated!')
+    return redirect(url_for('setup'))
 
 def shutdown_server():
     func = request.environ.get('werkzeug.server.shutdown')

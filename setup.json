@@ -4,5 +4,11 @@
     "discord_token": "",
     "playlist_link": "",
     "discord_channel": 8,
-    "grab_past_flag": 1
+    "grab_past_flag": 1,
+    "installed_features": {
+        "database": true, 
+        "leaderboard": true, 
+        "item 3": false, 
+        "item 4": false}
+    }
 }

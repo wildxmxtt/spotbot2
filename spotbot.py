@@ -71,7 +71,7 @@ async def r(ctx):
         random_song = random.choice(spotify_ids)
         print(f"The random song you got was: {random_song}")
         await ctx.reply(f"The random song you got was: {random_song}")
-    else:
+    else: # if there are no songs
         print(f"There are no songs yet.")
         await ctx.reply("There are no songs yet. A random song cannot be retrieved.")
 
@@ -87,23 +87,28 @@ async def grabPast(ctx):
         data = json.load(setupf)
         grab_past_flag = (data['grab_past_flag']) 
 
+    # Grab past is intended to be called once, this is a catch to not re-compute old messages that
+    #   have already been recorded
     if(grab_past_flag) == 1: 
         await ctx.reply("grabPast has already been called. If this is a mistake please go to the setup.json file and set grab_past_flag to 0")
     else:
         word = "https://open.spotify.com/track"
         await ctx.reply("Grabbing songs now please wait until FINISHED is sent")
 
-        
+        # Grab messages from the channel
         messages = [messages async for messages in ctx.channel.history(limit=500000)] #If your bot is not reading all of your messages this number may have to be heigher
-
         await ctx.send("Grabbing & Flitering Past Messages (this could take a while).....")
 
-        # to make it work with only one file, surprisingly all the playlist file handling is done in dupCheck()
+        # to make it work with only one file, surprisingly all the SQL is handled in dupCheck()
+        # Loop through each message
         for msg in messages:
-            if word in msg.content:
-                dupCheck(msg.content)#send off the link
-        print(pgrm_signature + playlist_update.sendOff()) #send off the playlist.txt file to be uploaded to Spotify
+            if word in msg.content: # Only spotifiy links
+                dupCheck(msg.content)# send off the link and check to see if it is a duplicate
+        
+         # send off the spotifyIDs file to be uploaded to Spotify
+        print(pgrm_signature + playlist_update.sendOff())
         await ctx.send("Messages Grabbed, Process Complete, FINISHED" + "\n Here is the Spotify Link: " + playlist_link)
+        
         update_gp_flag()
         print("Updated the grabpast flag")
         
@@ -123,18 +128,23 @@ async def on_message(msg):
                 checkEmoji = "☑️"
                 rEmoji = "🔁" 
 
+                # Check to see if the song is duplicate, if not add it to the DB
                 test = dupCheck(msg.content)
 
-        #Decides what emoji to add based on if it is a duplicate or not
+                #Decides what emoji to add based on if it is a duplicate or not
                 if(test == True):
                     await msg.add_reaction (rEmoji)
                 else:
+                    # Once added to DB send to spotify to add to playlist
                     print(pgrm_signature + playlist_update.sendOff())
                     await msg.add_reaction(checkEmoji) #adds emoji when song is added to playlist
+
+                    # Warn users that previous songs may not be accounted for as grabPast has NOT been called
                     if(grab_past_flag == 0):
                         await msg.reply("WARNING GRAB PAST FLAG IS STILL ZERO, IF THERE ARE NO PAST SONGS YOU NEED TO GRAB. SET THE GRAB PAST FLAG TO ZERO IN setup.json AND RESTART spotbot.py. THIS WILL CAUSE ERRORS ELSEWISE")
 
-        else:            
+        else:
+            # Print to the terminal that a message was recieved but it is NOT a spotify link
             print(pgrm_signature + "Not valid Spotify link")
     
         await bot.process_commands(msg)
@@ -165,14 +175,18 @@ def dupCheck(link):
     if matches:
         print(pgrm_signature + 'String', string1, 'Found In song database')
         print(pgrm_signature + "DUPLICATE LINK FOUND, NOT ADDED TO PLAYLIST FILE")
-        return True
+        return True # EXIT and return true; this is infact a duplicate
     else: # If a match is not found
         print(pgrm_signature + 'String', string1 , 'Not Found')
+
+        # Add the song ID into the database
         cur.execute("INSERT INTO songs (spotify_ID, sender_ID) VALUES (?, ?)", (stripped, 1))
         conn.commit()
     
+    # Add to the uri.txt file to be sent off
     uritxt(link)
 
+    # Close the connection to the database
     conn.close()
 
 def uritxt(link):
@@ -183,6 +197,7 @@ def uritxt(link):
 
     print(pgrm_signature + "Writting to uri.txt..... \n")
     
+    # Ensure the link is computed as a str
     song = str(link)
 
     if(grab_past_flag == 0):
@@ -198,21 +213,20 @@ def uritxt(link):
         cur.execute("Select spotify_ID FROM songs")
         rline = cur.fetchall() # retreive all spotify IDs and store in readlines
 
-        print("WARNING GRAB PAST FLAG IS SET TO ZERO, MAKE SURE THIS IS SET TO 1 IF YOU DONT HAVE ANY SONGS YOU NEED TO GET FROM THE PAST")
-        print(pgrm_signature + "Writting to uri.txt.....: \n")
-
         # Prepare to write the spotify IDs to the uri.txt file
         file1 = open("uri.txt", "w+")
     
+        # Loop through each spotify ID
         for line in rline:
             # Convert tuple to string if necessary, sometimes we receive a string
             if isinstance(line, tuple):
-                line = line[0]   # Take the first element of the tuple (spotifyID)
+                line = line[0] # Take the first element of the tuple (spotifyID)
 
             # Adds expected format to begingin of the spotify ID and writes to the file
             formattedLine = line.replace("https://open.spotify.com/track/", "spotify:track:")
 
-            file1.write(formattedLine.split("?si")[0] + "\n") #cuts off exess info from the uri and writes it to the file
+            # Cuts off exess info from the uri and writes it to the file
+            file1.write(formattedLine.split("?si")[0] + "\n")
 
         # Send status, close the connection and file
         print(pgrm_signature + "uri.txt has been written to")
@@ -222,11 +236,12 @@ def uritxt(link):
     else:
         file1 = open("uri.txt", "w+")
 
-        #chops it up into uri format
+        # Changing to the format expected
         formattedLine = song.replace("https://open.spotify.com/track/", "spotify:track:")
-        formattedLine2 = formattedLine.split("?", 1)[0]
-        print(f"{pgrm_signature} DEBUG: {formattedLine} AND {formattedLine2}")
-        file1.write(formattedLine2 + "\n") #cuts off exess info from the uri and writes it to the file
+        formattedLine = formattedLine.split("?", 1)[0] # removing all contents regarding session ID
+        
+        # Writes URI to the file
+        file1.write(formattedLine + "\n")
         print(f"These have been written to the uri.txt file")
 
         file1.close()

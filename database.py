@@ -18,15 +18,17 @@ cur = conn.cursor()
 
 # Get a list of tables in the database
 # cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
-# tables = cur.fetchall()
-
-cur.execute("DELETE FROM songs")
-conn.commit()
 
 cur.execute("SELECT spotify_ID from songs")
 songs = cur.fetchall()
 print("Songs in the database:\n")
 for song in songs:
-    print(song)
+    print(song)# tables = cur.fetchall()
+
+print("Deleting all songs now\n")
+
+cur.execute("DELETE FROM songs")
+conn.commit()
+
 
 conn.close()

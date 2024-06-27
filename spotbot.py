@@ -205,9 +205,13 @@ def uritxt(link):
         file1 = open("uri.txt", "w+")
     
         for line in rline:
+            # Convert tuple to string if necessary, sometimes we receive a string
+            if isinstance(line, tuple):
+                line = line[0]   # Take the first element of the tuple (spotifyID)
+
             # Adds expected format to begingin of the spotify ID and writes to the file
-            print(f"{pgrm_signature}: TESTING the line in rlines is {line}")
             formattedLine = line.replace("https://open.spotify.com/track/", "spotify:track:")
+
             file1.write(formattedLine.split("?si")[0] + "\n") #cuts off exess info from the uri and writes it to the file
 
         # Send status, close the connection and file

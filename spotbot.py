@@ -103,7 +103,9 @@ async def grabPast(ctx):
         # Loop through each message
         for msg in messages:
             if word in msg.content: # Only spotifiy links
-                dupCheck(msg.content)# send off the link and check to see if it is a duplicate
+                dupCheck(msg)# send off the link and check to see if it is a duplicate
+                # If the song is not a duplicate
+                    
         
          # send off the spotifyIDs file to be uploaded to Spotify
         print(pgrm_signature + playlist_update.sendOff())
@@ -129,7 +131,7 @@ async def on_message(msg):
                 rEmoji = "🔁" 
 
                 # Check to see if the song is duplicate, if not add it to the DB
-                test = dupCheck(msg.content)
+                test = dupCheck(msg)
 
                 #Decides what emoji to add based on if it is a duplicate or not
                 if(test == True):
@@ -138,6 +140,9 @@ async def on_message(msg):
                     # Once added to DB send to spotify to add to playlist
                     print(pgrm_signature + playlist_update.sendOff())
                     await msg.add_reaction(checkEmoji) #adds emoji when song is added to playlist
+                    
+                    # Record sender metadata
+                    getMetaData(msg)
 
                     # Warn users that previous songs may not be accounted for as grabPast has NOT been called
                     if(grab_past_flag == 0):
@@ -150,9 +155,9 @@ async def on_message(msg):
         await bot.process_commands(msg)
 
 
-#checks for duplicates before sending songs off to uri.txt
-def dupCheck(link):
-    string1 = link
+#checks for duplicates before sending songs off to uri.txt and recording in database
+def dupCheck(msg):
+    string1 = msg.content
     
     # opening a text files (new)
     conn = sqlite3.connect('spotbot.db')
@@ -180,11 +185,11 @@ def dupCheck(link):
         print(pgrm_signature + 'String', string1 , 'Not Found')
 
         # Add the song ID into the database
-        cur.execute("INSERT INTO songs (spotify_ID, sender_ID) VALUES (?, ?)", (stripped, 1))
+        cur.execute("INSERT INTO songs (spotify_ID, sender_ID) VALUES (?, ?)", (stripped, getMetaData(msg)))
         conn.commit()
     
     # Add to the uri.txt file to be sent off
-    uritxt(link)
+    uritxt(msg.content)
 
     # Close the connection to the database
     conn.close()
@@ -272,4 +277,35 @@ def update_gp_flag():
     
         print(pgrm_signature + 'Successfully updated setup.json')
     
+# Get the message sender data
+def getMetaData(msg):
+    # get the sender id
+    senderId = msg.author.id
+
+    # Print information out for debug
+    print(f"{pgrm_signature}: The sender id is: {senderId}")
+
+    # Connect to or create SQLite Database
+    conn = sqlite3.connect('spotbot.db') # create or connect to the database
+
+    # Create a cursor
+    cur = conn.cursor()
+    
+    # Check to see if the sender is already in the senders table
+    query = "SELECT sender_ID FROM senders WHERE sender_ID = ?"
+    cur.execute(query, (senderId,)) # claude code for sanitized inputs
+    matches = cur.fetchone()
+    
+    # if not add it
+    if not matches:
+        # insert the new sender_ID into the table
+        query = "INSERT INTO senders (sender_ID) VALUES (?)"
+        cur.execute(query, (senderId,))
+
+        # Commit changes
+        conn.commit()
+
+    # return the sender ID to be used in dupCheck to be recorded in the songs playlist
+    return senderId
+
 bot.run(TOKEN)

@@ -140,9 +140,6 @@ async def on_message(msg):
                     # Once added to DB send to spotify to add to playlist
                     print(pgrm_signature + playlist_update.sendOff())
                     await msg.add_reaction(checkEmoji) #adds emoji when song is added to playlist
-                    
-                    # Record sender metadata
-                    getMetaData(msg)
 
                     # Warn users that previous songs may not be accounted for as grabPast has NOT been called
                     if(grab_past_flag == 0):
@@ -185,7 +182,8 @@ def dupCheck(msg):
         print(pgrm_signature + 'String', string1 , 'Not Found')
 
         # Add the song ID into the database
-        cur.execute("INSERT INTO songs (spotify_ID, sender_ID) VALUES (?, ?)", (stripped, getMetaData(msg)))
+        cur.execute("INSERT INTO songs (spotify_ID, sender_ID, timestamp, discord_message_id) VALUES (?, ?, ?, ?)", 
+                    (stripped, getSender(msg), getTimestamp(msg), getMessageID(msg)))
         conn.commit()
     
     # Add to the uri.txt file to be sent off
@@ -278,34 +276,30 @@ def update_gp_flag():
         print(pgrm_signature + 'Successfully updated setup.json')
     
 # Get the message sender data
-def getMetaData(msg):
+def getSender(msg):
     # get the sender id
     senderId = msg.author.id
 
-    # Print information out for debug
-    print(f"{pgrm_signature}: The sender id is: {senderId}")
-
-    # Connect to or create SQLite Database
-    conn = sqlite3.connect('spotbot.db') # create or connect to the database
-
-    # Create a cursor
-    cur = conn.cursor()
-    
-    # Check to see if the sender is already in the senders table
-    query = "SELECT sender_ID FROM senders WHERE sender_ID = ?"
-    cur.execute(query, (senderId,)) # claude code for sanitized inputs
-    matches = cur.fetchone()
-    
-    # if not add it
-    if not matches:
-        # insert the new sender_ID into the table
-        query = "INSERT INTO senders (sender_ID) VALUES (?)"
-        cur.execute(query, (senderId,))
-
-        # Commit changes
-        conn.commit()
-
     # return the sender ID to be used in dupCheck to be recorded in the songs playlist
     return senderId
+
+# returns the formatted time stamp
+def getTimestamp(msg):
+    # Get the timestamp from the message
+    timestamp = msg.created_at
+
+    # Format the timestamp as a string
+    formatted_timestamp = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+
+    # return the sender ID to be used in dupCheck to be recorded in the songs playlist
+    return formatted_timestamp
+
+# Returns the message ID of a msg
+def getMessageID(msg):
+    # Get the ID for the message on discord
+    message_id = str(msg.id)
+
+    # return the sender ID to be used in dupCheck to be recorded in the songs playlist
+    return message_id
 
 bot.run(TOKEN)

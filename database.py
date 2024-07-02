@@ -1,12 +1,10 @@
-# +----------------------+
-# |        songs         |
-# +----------------------+
-# | id (INTEGER PRIMARY) |
-# | content (TEXT)       |
-# | timestamp (TEXT)     |
-# | discord_message_id   |
-# |        (TEXT)        |
-# +----------------------+
+# Table: songs
+# ------------
+# song_table_ID: INTEGER  
+# spotify_ID: TEXT        
+# sender_ID: INTEGER      
+# timestamp: TEXT
+# discord_message_id: TEXT
 
 # A file for manipulating the database in development
 
@@ -31,7 +29,24 @@ cur = conn.cursor()
 
 
 
-# print(f"songs:\n\n{table}")
+# cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
+# tables = cur.fetchall()
+
+# # For each table, get and print column information
+# for table in tables:
+#     table_name = table[0]
+#     print(f"\nTable: {table_name}")
+#     print("-" * (len(table_name) + 7))
+    
+#     # Get column information
+#     cur.execute(f"PRAGMA table_info({table_name})")
+#     columns = cur.fetchall()
+    
+#     # Print column names and types
+#     for column in columns:
+#         col_name = column[1]
+#         col_type = column[2]
+#         print(f"{col_name}: {col_type}")
 
 cur.execute("SELECT * FROM songs")
 table = cur.fetchall()
@@ -40,22 +55,22 @@ for entry in table:
     print(entry)
 
 # Execute the SELECT statement
-# cur.execute("""
-#     SELECT sender_ID, COUNT(*) as song_count
-#     FROM songs
-#     GROUP BY sender_ID
-#     ORDER BY song_count DESC
-# """)
+cur.execute("""
+    SELECT sender_ID, COUNT(*) as song_count
+    FROM songs
+    GROUP BY sender_ID
+    ORDER BY song_count DESC
+""")
 
-# # Fetch all results
-# results = cur.fetchall()
+# Fetch all results
+results = cur.fetchall()
 
-# # Print the results
-# print("Sender ID | Number of Songs")
-# print("--------------------------")
-# for row in results:
-#     sender_id, song_count = row
-#     print(f"{sender_id:9d} | {song_count:16d}")
+# Print the results
+print("Sender ID | Number of Songs")
+print("--------------------------")
+for row in results:
+    sender_id, song_count = row
+    print(f"{sender_id:9d} | {song_count:16d}")
 
 # # Close the connection
 # conn.close()

@@ -1,5 +1,6 @@
 from discord.ext import commands
 import re
+import sqlite3
 import discord
 from datetime import datetime
 import json
@@ -50,31 +51,32 @@ async def sLink(ctx):
 #a request command to give the user back a random song from the playlist 
 @bot.command()
 async def r(ctx): 
-    file = open("playlist.txt", "r") #Opens the playlist.txt file 
-    count = 0
-    for line in file:
-        #print(line)
-        count +=1
+    # Connect to the SQLite Database
+    conn = sqlite3.connect('spotbot.db')
+    cur = conn.cursor()
 
-    print("amt of songs in playlist.txt: " + str(count))
-    requestNum = random.randint(0,count-1)
-    print("number generated: " + str(requestNum))
-    with open("playlist.txt", 'r') as fp:
-        # lines to read
-        line_numbers = [requestNum, count]
-        # To store lines
-        lines = []
-        for i, line in enumerate(fp):
-            # read from line 0 and the len of the text file
-            if i in line_numbers:
-                lines.append(line.strip())
-            elif i > count:
-                # don't read after line 7 to save time
-                break
-    pre = str(lines)[1:-1] #removes square bracket
-    random_song = pre[1:-1] #removes '' from front and back of the text 
-    print("The random song you got was: " + pre)
-    await ctx.reply("The random song you got was: " + random_song)
+    # Get the number of total songs in the playlist
+    cur.execute('SELECT COUNT(*) FROM songs')
+    count = cur.fetchone()[0]
+
+    print(f"There are {count} song IDs in the songs table.")
+
+    # Get all spotify_IDs from the songs table
+    cur.execute('SELECT spotify_ID FROM songs')
+    spotify_ids = [row[0] for row in cur.fetchall()]
+
+    # if there are songs
+    if spotify_ids:
+        # get a random id
+        random_song = random.choice(spotify_ids)
+        print(f"The random song you got was: {random_song}")
+        await ctx.reply(f"The random song you got was: {random_song}")
+    else: # if there are no songs
+        print(f"There are no songs yet.")
+        await ctx.reply("There are no songs yet. A random song cannot be retrieved.")
+
+    # Close the connection
+    conn.close()
 
 
 
@@ -85,23 +87,30 @@ async def grabPast(ctx):
         data = json.load(setupf)
         grab_past_flag = (data['grab_past_flag']) 
 
+    # Grab past is intended to be called once, this is a catch to not re-compute old messages that
+    #   have already been recorded
     if(grab_past_flag) == 1: 
         await ctx.reply("grabPast has already been called. If this is a mistake please go to the setup.json file and set grab_past_flag to 0")
     else:
         word = "https://open.spotify.com/track"
         await ctx.reply("Grabbing songs now please wait until FINISHED is sent")
 
-        
+        # Grab messages from the channel
         messages = [messages async for messages in ctx.channel.history(limit=500000)] #If your bot is not reading all of your messages this number may have to be heigher
-
         await ctx.send("Grabbing & Flitering Past Messages (this could take a while).....")
 
-        # to make it work with only one file, surprisingly all the playlist file handling is done in dupCheck()
+        # to make it work with only one file, surprisingly all the SQL is handled in dupCheck()
+        # Loop through each message
         for msg in messages:
-            if word in msg.content:
-                dupCheck(msg.content)#send off the link
-        print(pgrm_signature + playlist_update.sendOff()) #send off the playlist.txt file to be uploaded to Spotify
+            if word in msg.content: # Only spotifiy links
+                dupCheck(msg)# send off the link and check to see if it is a duplicate
+                # If the song is not a duplicate
+                    
+        
+         # send off the spotifyIDs file to be uploaded to Spotify
+        print(pgrm_signature + playlist_update.sendOff())
         await ctx.send("Messages Grabbed, Process Complete, FINISHED" + "\n Here is the Spotify Link: " + playlist_link)
+        
         update_gp_flag()
         print("Updated the grabpast flag")
         
@@ -121,89 +130,67 @@ async def on_message(msg):
                 checkEmoji = "☑️"
                 rEmoji = "🔁" 
 
-                test = dupCheck(msg.content)
+                # Check to see if the song is duplicate, if not add it to the DB
+                test = dupCheck(msg)
 
-        #Decides what emoji to add based on if it is a duplicate or not
+                #Decides what emoji to add based on if it is a duplicate or not
                 if(test == True):
                     await msg.add_reaction (rEmoji)
                 else:
+                    # Once added to DB send to spotify to add to playlist
                     print(pgrm_signature + playlist_update.sendOff())
                     await msg.add_reaction(checkEmoji) #adds emoji when song is added to playlist
+
+                    # Warn users that previous songs may not be accounted for as grabPast has NOT been called
                     if(grab_past_flag == 0):
                         await msg.reply("WARNING GRAB PAST FLAG IS STILL ZERO, IF THERE ARE NO PAST SONGS YOU NEED TO GRAB. SET THE GRAB PAST FLAG TO ZERO IN setup.json AND RESTART spotbot.py. THIS WILL CAUSE ERRORS ELSEWISE")
 
-        else:            
+        else:
+            # Print to the terminal that a message was recieved but it is NOT a spotify link
             print(pgrm_signature + "Not valid Spotify link")
     
         await bot.process_commands(msg)
 
 
-#checks for duplicates before sending songs off to uri.txt
-def dupCheck(link):
-    string1 = link
-    # opening a text files
-    try:
-        file = open("playlist.txt", "r") # I am changing the name to playlist as it makes more sense in my head this could be a problem later so revert if needed.
-    except FileNotFoundError:
-        #make it create then open the file if the file does not exits
-        file = open("playlist.txt", "x")
-        file.close()
-        file = open("playlist.txt", "r")
+#checks for duplicates before sending songs off to uri.txt and recording in database
+def dupCheck(msg):
+    string1 = msg.content
+    
+    # opening a text files (new)
+    conn = sqlite3.connect('spotbot.db')
+    cur = conn.cursor()
 
-    # setting flag and index to 0
-    flag = 0
-    index = 0
+    # Separate the string supplied to just the spotify ID
+    # are the same song:
+    # https://open.spotify.com/track/2XgTw2co6xv95TmKpMcL70?si=dbe7fd4a016344ec
+    # https://open.spotify.com/track/2XgTw2co6xv95TmKpMcL70?si=8fe74b50ad804b52
+    sep = '?'
+    stripped = string1.split(sep, 1)[0]
 
-    # Loop through the file line by line
-    for line in file:
-        index += 1
-        print("Song" + str(index) + ": " +line)
-        #are the same song:
-        #https://open.spotify.com/track/2XgTw2co6xv95TmKpMcL70?si=dbe7fd4a016344ec
-        #https://open.spotify.com/track/2XgTw2co6xv95TmKpMcL70?si=8fe74b50ad804b52
-        
-        sep = '?' #where to seperate
-        stripped = string1.split(sep, 1)[0]
+    # Attempt to select spotify_ID
+    # input sanitization - https://realpython.com/prevent-python-sql-injection/
+    #cur.execute("SELECT spotify_ID FROM songs WHERE spotify_ID = ?'," (stripped, )) # sanitized input?
+    cur.execute("SELECT spotify_ID FROM songs WHERE spotify_ID = ?", (stripped,))
+    matches = cur.fetchone()
 
-        #print("Stripped: "+ str(index) +": " + stripped)
-
-        if stripped in str(line):
-            flag = 1
-            break
-
-        if string1.split("\n", 1)[0] in line: 
-            flag = 1
-            break
-
-    print(flag)
-    #swap file operation to append
-    file.close()
-
-    file = open("playlist.txt", "a")
-
-
-    # checking condition for string found or not
-    if flag == 0:
-        print(pgrm_signature + 'String', string1 , 'Not Found')
-        
-        songToWrite = str(link)
-
-        if "," in songToWrite:
-            songToWrite = songToWrite.split(",", 1)[0]
-        
-        file.write(songToWrite + "\n") # Changed to making every new song go to its own line for later reading simplicity
-        print(pgrm_signature + "playlist file has been written to succesfully")
-        file.close()
-        uritxt(songToWrite)
-        return False
-    else:
-        print(pgrm_signature + 'String', string1, 'Found In Line', index, ' in playlist.txt')
-        # closing text file	
+    # If a match is found
+    if matches:
+        print(pgrm_signature + 'String', string1, 'Found In song database')
         print(pgrm_signature + "DUPLICATE LINK FOUND, NOT ADDED TO PLAYLIST FILE")
-        file.close()
-        return True
-    #commit me 
+        return True # EXIT and return true; this is infact a duplicate
+    else: # If a match is not found
+        print(pgrm_signature + 'String', string1 , 'Not Found')
 
+        # Add the song ID into the database
+        cur.execute("INSERT INTO songs (spotify_ID, sender_ID, timestamp, discord_message_id) VALUES (?, ?, ?, ?)", 
+                    (stripped, getSender(msg), getTimestamp(msg), getMessageID(msg)))
+        conn.commit()
+    
+    # Add to the uri.txt file to be sent off
+    uritxt(msg.content)
+
+    # Close the connection to the database
+    conn.close()
 
 def uritxt(link):
     #opens up the setup.json file
@@ -213,36 +200,54 @@ def uritxt(link):
 
     print(pgrm_signature + "Writting to uri.txt..... \n")
     
+    # Ensure the link is computed as a str
+    song = str(link)
+
     if(grab_past_flag == 0):
+        # new code
         print("WARNING GRAB PAST FLAG IS SET TO ZERO, MAKE SURE THIS IS SET TO 1 IF YOU DONT HAVE ANY SONGS YOU NEED TO GET FROM THE PAST")
         print(pgrm_signature + "Writting to uri.txt.....: \n")
-        file = open("playlist.txt", "r+")
+
+        # connect to the database
+        conn = sqlite3.connect('spotbot.db')
+        cur = conn.cursor()
+
+        # Select all spotify IDs
+        cur.execute("Select spotify_ID FROM songs")
+        rline = cur.fetchall() # retreive all spotify IDs and store in readlines
+
+        # Prepare to write the spotify IDs to the uri.txt file
         file1 = open("uri.txt", "w+")
-        count = 0
-        rline = file.readlines()
     
-    #chops it up into uri format
+        # Loop through each spotify ID
         for line in rline:
-            count += 1 
-            #replace x, with y
-            #line.replace(x,y)
-            fline = line.replace("https://open.spotify.com/track/", "spotify:track:")
-            file1.write(fline.split("?si")[0] + "\n") #cuts off exess info from the uri and writes it to the file
+            # Convert tuple to string if necessary, sometimes we receive a string
+            if isinstance(line, tuple):
+                line = line[0] # Take the first element of the tuple (spotifyID)
+
+            # Adds expected format to begingin of the spotify ID and writes to the file
+            formattedLine = line.replace("https://open.spotify.com/track/", "spotify:track:")
+
+            # Cuts off exess info from the uri and writes it to the file
+            file1.write(formattedLine.split("?si")[0] + "\n")
+
+        # Send status, close the connection and file
         print(pgrm_signature + "uri.txt has been written to")
         file1.close()
+        conn.close()
         
     else:
         file1 = open("uri.txt", "w+")
 
-        song = str(link)
-
-        #chops it up into uri format
-        fline = song.replace("https://open.spotify.com/track/", "spotify:track:")
-        fline2 = fline.split("?", 1)[0]
-        file1.write(fline2 + "\n") #cuts off exess info from the uri and writes it to the file
+        # Changing to the format expected
+        formattedLine = song.replace("https://open.spotify.com/track/", "spotify:track:")
+        formattedLine = formattedLine.split("?", 1)[0] # removing all contents regarding session ID
+        
+        # Writes URI to the file
+        file1.write(formattedLine + "\n")
+        print(f"These have been written to the uri.txt file")
 
         file1.close()
-        count = 0
 
         print(pgrm_signature + "Uri text file written to succesfully!\n")
         print(pgrm_signature + "Sending songs off to spotify")
@@ -261,7 +266,7 @@ def update_gp_flag():
         dictObj = json.load(fp)
     
         # "grab_past_flag" : 0
-        dictObj.update({"grab_past_flag": 1 })
+        dictObj.update({"grab_past_flag": 1})
     
         with open(filename, 'w') as json_file:
             json.dump(dictObj, json_file, 
@@ -270,4 +275,31 @@ def update_gp_flag():
     
         print(pgrm_signature + 'Successfully updated setup.json')
     
+# Get the message sender data
+def getSender(msg):
+    # get the sender id
+    senderId = msg.author.id
+
+    # return the sender ID to be used in dupCheck to be recorded in the songs playlist
+    return senderId
+
+# returns the formatted time stamp
+def getTimestamp(msg):
+    # Get the timestamp from the message
+    timestamp = msg.created_at
+
+    # Format the timestamp as a string
+    formatted_timestamp = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+
+    # return the sender ID to be used in dupCheck to be recorded in the songs playlist
+    return formatted_timestamp
+
+# Returns the message ID of a msg
+def getMessageID(msg):
+    # Get the ID for the message on discord
+    message_id = str(msg.id)
+
+    # return the sender ID to be used in dupCheck to be recorded in the songs playlist
+    return message_id
+
 bot.run(TOKEN)

@@ -78,7 +78,44 @@ async def r(ctx):
     # Close the connection
     conn.close()
 
+# a request command to produce an all time leaderboard stats for the respective discord server 
+@bot.command()
+async def leaderboard(ctx):
+    # Connect to the SQLite Database
+    conn = sqlite3.connect('spotbot.db')
+    cur = conn.cursor()
 
+    # Get top 10 users and their number of songs added
+    cur.execute("""
+        SELECT sender_ID, COUNT(*) as song_count
+        FROM songs
+        GROUP BY sender_ID
+        ORDER BY song_count DESC
+    """)
+
+    # Fetch all
+    results = cur.fetchall()
+
+    userIDs = [row[0] for row in results]
+    usernames = {}
+    # For each user ID in the results get the username
+    for userID in userIDs:
+        try:
+            user = await bot.fetch_user(userID)
+            usernames[userID] = user.name
+        except discord.NotFound:
+            usernames[userID] = "Unknown User"
+
+    # Print the results
+    response = "Username | Number of Songs\n-------------------------------------"
+    for row in results:
+        discord_id, song_count = row
+        username = usernames.get(discord_id, "Unknown")
+        response += (f"\n{username:8s} | {song_count:15d}")
+
+    await ctx.send(response)
+    # Close the connection
+    conn.close()
 
 #This is to grab the past songs that have been sent to the channel
 @bot.command()

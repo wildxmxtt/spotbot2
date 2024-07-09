@@ -98,11 +98,24 @@ async def leaderboard(ctx):
 
     userIDs = [row[0] for row in results]
     usernames = {}
+    guild = ctx.guild
     # For each user ID in the results get the username
     for userID in userIDs:
         try:
-            user = await bot.fetch_user(userID)
-            usernames[userID] = user.name
+            member = guild.get_member(userID)
+            if member is None:
+                member = await guild.fetch_member(userID)
+            
+            if member.nick:
+                usernames[userID] = member.nick
+            else:
+                usernames[userID] = member.name
+            
+            print(f"Debug - User ID: {userID}, Name: {member.name}, Nickname: {member.nick}")
+
+            # Old code
+            # user = await guild.fetch_member(userID)
+            # usernames[userID] = user.nick or user.name
         except discord.NotFound:
             usernames[userID] = "Unknown User"
 

@@ -96,6 +96,47 @@ async def leaderboard(ctx):
     # Fetch all
     results = cur.fetchall()
 
+    # Send the embed
+    title="All Time Leaderboard"
+    await sendLeaderBoardEmbed(ctx, results, title)
+
+    # Close the connection
+    conn.close()
+
+# a request command to produce a leaderboard with this months stats for the respective discord server
+@bot.command()
+async def thismonth(ctx):
+    # Connect to the SQLite Database
+    conn = sqlite3.connect('spotbot.db')
+    cur = conn.cursor()
+
+    # Get the current year and month
+    current_date = datetime.now()
+    current_year = current_date.year
+    current_month = current_date.month
+
+    # Get top 10 users and their number of songs added for the current month
+    cur.execute("""
+        SELECT sender_ID, COUNT(*) as song_count
+        FROM songs
+        WHERE strftime('%Y', timestamp) = ? AND strftime('%m', timestamp) = ?
+        GROUP BY sender_ID
+        ORDER BY song_count DESC
+        LIMIT 10
+    """, (str(current_year), f"{current_month:02d}"))
+
+    # Fetch all
+    results = cur.fetchall()
+
+    # Send the embed
+    title="This Months Stats"
+    await sendLeaderBoardEmbed(ctx, results, title)
+
+    # Close the connection
+    conn.close()
+
+# Using the result from an SQL querey, an embed is created and sent
+async def sendLeaderBoardEmbed(ctx, results, title):
     userIDs = [row[0] for row in results]
     usernames = {}
     guild = ctx.guild
@@ -104,31 +145,40 @@ async def leaderboard(ctx):
         try:
             member = guild.get_member(userID)
             if member is None:
+                print(f"Debug: Fetching member {userID}")
                 member = await guild.fetch_member(userID)
             
-            if member.nick:
-                usernames[userID] = member.nick
+            # Attempt to get the display name, if not available get the name
+            if member.display_name:
+                usernames[userID] = member.display_name
             else:
                 usernames[userID] = member.name
             
-            print(f"Debug - User ID: {userID}, Name: {member.name}, Nickname: {member.nick}")
+            print(f"{pgrm_signature}: Debug - User ID: {userID}, Name: {member.name}, Display name: {member.display_name}")
 
-            # Old code
-            # user = await guild.fetch_member(userID)
-            # usernames[userID] = user.nick or user.name
         except discord.NotFound:
             usernames[userID] = "Unknown User"
 
-    # Print the results
-    response = "Username | Number of Songs\n-------------------------------------"
-    for row in results:
-        discord_id, song_count = row
-        username = usernames.get(discord_id, "Unknown")
-        response += (f"\n{username:8s} | {song_count:15d}")
+    # Create the embed
+    embed = discord.Embed(title=title, color=0x1DB954, url=playlist_link)
+    embed.description = "The top 10 users who have sent the most songs:"
 
-    await ctx.send(response)
-    # Close the connection
-    conn.close()
+    loops = 1
+
+    for row in results:
+        if loops != 10:
+            discord_id, song_count = row
+            username = usernames.get(discord_id, "Unknown")
+            
+            # Add the new information to the response
+            # response += (f"\n{username:8s} | {song_count:15d}")
+            embed.add_field(name=f"{loops}. {username}", value=f"{song_count} songs", inline=False)
+            loops += 1
+        else:
+            # Only print the first 10
+            break
+
+    await ctx.send(embed=embed)
 
 #This is to grab the past songs that have been sent to the channel
 @bot.command()

@@ -351,6 +351,19 @@ def uritxt(link):
 
         print(pgrm_signature + "Uri text file written to succesfully!\n")
         print(pgrm_signature + "Sending songs off to spotify")
+
+# Recieves the number of total songs in the playlist and sends acheivement messages (if enabled via Flask)
+async def checkAchievement(numberOfMessages):
+    # Acheivements go 25, 50, 69, 100, 200, etc
+
+    # Small number acheivements
+    if numberOfMessages < 100:
+        if (numberOfMessages % 25 == 0) and (numberOfMessages != 75):
+            # print the number and a success
+        elif numberOfMessages == 69:
+            # print out the haha funny
+    elif numberOfMessages % 100 == 0:
+        # print out he number of songs
     
 def update_gp_flag(): 
  ###Update grab_past_flag#####

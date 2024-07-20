@@ -244,6 +244,21 @@ async def on_message(msg):
                     # Warn users that previous songs may not be accounted for as grabPast has NOT been called
                     if(grab_past_flag == 0):
                         await msg.reply("WARNING GRAB PAST FLAG IS STILL ZERO, IF THERE ARE NO PAST SONGS YOU NEED TO GRAB. SET THE GRAB PAST FLAG TO ZERO IN setup.json AND RESTART spotbot.py. THIS WILL CAUSE ERRORS ELSEWISE")
+                    
+                    # Check for acheivements (connect to db, get song count)
+                    conn = sqlite3.connect('spotbot.db')
+                    cur = conn.cursor()
+
+                    cur.execute("SELECT COUNT(*) FROM songs")
+
+                    # Get the acheivement string (if any)
+                    celebration = checkAchievement(cur.fetchone()[0])
+
+                    conn.close()
+
+                    # If there is a celebration, send the message
+                    if(celebration):
+                        await msg.channel.send(celebration)
 
         else:
             # Print to the terminal that a message was recieved but it is NOT a spotify link
@@ -285,7 +300,7 @@ def dupCheck(msg):
         cur.execute("INSERT INTO songs (spotify_ID, sender_ID, timestamp, discord_message_id) VALUES (?, ?, ?, ?)", 
                     (stripped, getSender(msg), getTimestamp(msg), getMessageID(msg)))
         conn.commit()
-    
+
     # Add to the uri.txt file to be sent off
     uritxt(msg.content)
 
@@ -353,17 +368,27 @@ def uritxt(link):
         print(pgrm_signature + "Sending songs off to spotify")
 
 # Recieves the number of total songs in the playlist and sends acheivement messages (if enabled via Flask)
-async def checkAchievement(numberOfMessages):
+def checkAchievement(numberOfMessages):
     # Acheivements go 25, 50, 69, 100, 200, etc
 
-    # Small number acheivements
-    if numberOfMessages < 100:
-        if (numberOfMessages % 25 == 0) and (numberOfMessages != 75):
-            # print the number and a success
-        elif numberOfMessages == 69:
-            # print out the haha funny
-    elif numberOfMessages % 100 == 0:
-        # print out he number of songs
+    # Do not print out on a grab past
+    if (grab_past_flag == 1):
+        # Small number acheivements
+        if numberOfMessages < 100:
+            if (numberOfMessages % 25 == 0) and (numberOfMessages != 75):
+                # print the number and a success
+                return f"The playlist has reached {numberOfMessages} songs!"
+
+            elif numberOfMessages == 69:
+                # print out the haha funny
+                return f"The playlist has reached {numberOfMessages} songs! Nice!"
+
+        elif numberOfMessages % 100 == 0:
+            # print out he number of songs
+            return f"Woah! The playlist has reached {numberOfMessages} songs!"
+    # if no achievement return false
+    else:
+        return False
     
 def update_gp_flag(): 
  ###Update grab_past_flag#####

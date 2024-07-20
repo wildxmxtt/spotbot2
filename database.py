@@ -9,6 +9,7 @@
 # A file for manipulating the database in development
 
 import sqlite3
+from datetime import datetime
 
 # Connect to or create SQLite Database
 conn = sqlite3.connect('spotbot.db') # create or connect to the database
@@ -48,29 +49,29 @@ cur = conn.cursor()
 #         col_type = column[2]
 #         print(f"{col_name}: {col_type}")
 
-cur.execute("SELECT * FROM songs")
-table = cur.fetchall()
+# cur.execute("SELECT * FROM songs")
+# table = cur.fetchall()
 
-for entry in table:
-    print(entry)
+# for entry in table:
+#     print(entry)
 
-# Execute the SELECT statement
-cur.execute("""
-    SELECT sender_ID, COUNT(*) as song_count
-    FROM songs
-    GROUP BY sender_ID
-    ORDER BY song_count DESC
-""")
+# # Execute the SELECT statement
+# cur.execute("""
+#     SELECT sender_ID, COUNT(*) as song_count
+#     FROM songs
+#     GROUP BY sender_ID
+#     ORDER BY song_count DESC
+# """)
 
-# Fetch all results
-results = cur.fetchall()
+# # Fetch all results
+# results = cur.fetchall()
 
 # Print the results
-print("Sender ID | Number of Songs")
-print("--------------------------")
-for row in results:
-    sender_id, song_count = row
-    print(f"{sender_id:9d} | {song_count:16d}")
+# print("Sender ID | Number of Songs")
+# print("--------------------------")
+# for row in results:
+#     sender_id, song_count = row
+#     print(f"{sender_id:9d} | {song_count:16d}")
 
 # # Close the connection
 # conn.close()
@@ -80,5 +81,23 @@ for row in results:
 # cur.execute("DELETE FROM songs")
 # conn.commit()
 
+# Print out massagesIDs from last month
+# Get the current year and month
+current_date = datetime.now()
+current_year = current_date.year
+current_month = current_date.month
+
+# Get top 10 users and their number of songs added for the current month
+cur.execute("""
+    SELECT discord_message_id, timestamp
+    FROM songs
+    WHERE strftime('%Y', timestamp) = ? AND strftime('%m', timestamp) = ?
+    LIMIT 10
+""", (str(current_year), f"{current_month:02d}"))
+
+ids = cur.fetchall()
+
+for id in ids:
+    print (id)
 
 conn.close()

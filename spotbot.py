@@ -386,9 +386,9 @@ def checkAchievement(numberOfMessages):
         elif numberOfMessages % 100 == 0:
             # print out he number of songs
             return f"Woah! The playlist has reached {numberOfMessages} songs!"
-    # if no achievement return false
-    else:
-        return False
+    
+    # if grab past has not been called on start up or no acheivment has been metreturn false
+    return False
     
 def update_gp_flag(): 
  ###Update grab_past_flag#####

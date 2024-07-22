@@ -135,6 +135,41 @@ async def thismonth(ctx):
     # Close the connection
     conn.close()
 
+# A request that produces a leaderboard with this months highest reacted songs
+@bot.command()
+async def reactChamp(ctx):
+    # Connect to or create SQLite Database
+    conn = sqlite3.connect('spotbot.db') # create or connect to the database
+    cur = conn.cursor()
+
+    current_date = datetime.now()
+    current_year = current_date.year
+    current_month = current_date.month
+
+    # Get top 10 users and their number of songs added for the current month
+    cur.execute("""
+        SELECT spotify_id, discord_message_id
+        FROM songs
+        WHERE strftime('%Y', timestamp) = ? AND strftime('%m', timestamp) = ?
+        LIMIT 10
+    """, (str(current_year), f"{current_month:02d}"))
+
+    message_ids = cur.fetchall()
+
+    messages = []
+    # loop through each message ID
+    for msg_id in message_ids:
+        try:
+            message = await ctx.channel.fetch_message(msg_id[0])                        # Grab each message
+            total_reactions = sum(reaction.count for reaction in message.reactions)     # grab the total amount of reacitons for respective message
+            messages.append((message, total_reactions, msg_id[1]))                      # Add tuple of message, total reactions, and the spotify link
+        except discord.NotFound:
+            print(f"{pgrm_signature}: Massage with ID {msg_id[0]} not found")
+        except discord.Forbidden:
+            print(f"{pgrm_signature}: Bot doesn't have permission to fetch message {msg_id[0]}")
+        except discord.HTTPException:
+            print(f"Failed to fetch message {msg_id[0]}")
+
 # Using the result from an SQL querey, an embed is created and sent
 async def sendLeaderBoardEmbed(ctx, results, title):
     userIDs = [row[0] for row in results]

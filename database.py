@@ -89,7 +89,7 @@ current_month = current_date.month
 
 # Get top 10 users and their number of songs added for the current month
 cur.execute("""
-    SELECT discord_message_id, timestamp
+    SELECT discord_message_id, timestamp, spotify_id
     FROM songs
     WHERE strftime('%Y', timestamp) = ? AND strftime('%m', timestamp) = ?
     LIMIT 10

@@ -7,6 +7,7 @@ import json
 import playlist_update
 from os import path
 import random
+import calendar
 
 pgrm_signature = "spotbot.py: "
 
@@ -138,6 +139,9 @@ async def thismonth(ctx):
 # A request that produces a leaderboard with this months highest reacted songs
 @bot.command()
 async def reactChamp(ctx):
+    # warn user this may take a while
+    await ctx.send(f"Grabbing messages - this may take a while...")
+
     # Connect to or create SQLite Database
     conn = sqlite3.connect('spotbot.db') # create or connect to the database
     cur = conn.cursor()
@@ -148,10 +152,9 @@ async def reactChamp(ctx):
 
     # Get top 10 users and their number of songs added for the current month
     cur.execute("""
-        SELECT spotify_id, discord_message_id
+        SELECT spotify_id, discord_message_id, sender_ID
         FROM songs
         WHERE strftime('%Y', timestamp) = ? AND strftime('%m', timestamp) = ?
-        LIMIT 10
     """, (str(current_year), f"{current_month:02d}"))
 
     message_ids = cur.fetchall()
@@ -160,15 +163,41 @@ async def reactChamp(ctx):
     # loop through each message ID
     for msg_id in message_ids:
         try:
-            message = await ctx.channel.fetch_message(msg_id[0])                        # Grab each message
+            message = await ctx.channel.fetch_message(msg_id[1])                        # Grab each message
             total_reactions = sum(reaction.count for reaction in message.reactions)     # grab the total amount of reacitons for respective message
-            messages.append((message, total_reactions, msg_id[1]))                      # Add tuple of message, total reactions, and the spotify link
+            messages.append((message, total_reactions, msg_id[0], msg_id[2]))                      # Add tuple of message, total reactions, and the spotify link
         except discord.NotFound:
-            print(f"{pgrm_signature}: Massage with ID {msg_id[0]} not found")
+            print(f"{pgrm_signature}: Message with ID {msg_id[1]} not found")
         except discord.Forbidden:
             print(f"{pgrm_signature}: Bot doesn't have permission to fetch message {msg_id[0]}")
         except discord.HTTPException:
-            print(f"Failed to fetch message {msg_id[0]}")
+            print(f"Failed to fetch message {msg_id[1]}")
+
+    # Sort the results
+    # sorted is fed messages, key=lambda (idk why), x[1] for the reaction cound, 
+    # and reverse true for descending orde. [:5] to get the top 5
+    top_messages = sorted(messages, key=lambda x: x[1], reverse=True)[:5]
+
+    # make and send the embed
+    title = f"Reaction Champions for {calendar.month_name[current_month]}"
+    embed = discord.Embed(title=title, color=0x1DB954, url=playlist_link)
+    embed.description = "The top 5 highest reacted songs this month"
+
+    loops = 1
+    guild = ctx.guild
+    for message in top_messages:
+        # Get username
+        member = guild.get_member(message[3])
+
+        #will need username and link maybe?
+        field_value = f"{message[1]} reaction(s)\n"
+        field_value += f"[Listen Here]({message[2]})"
+        embed.add_field(name=f"{loops}. {member.display_name}", value=field_value, inline=False)
+        loops += 1
+
+    await ctx.send(embed=embed)
+
+    conn.close()
 
 # Using the result from an SQL querey, an embed is created and sent
 async def sendLeaderBoardEmbed(ctx, results, title):

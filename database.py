@@ -10,6 +10,7 @@
 
 import sqlite3
 from datetime import datetime
+import calendar
 
 # Connect to or create SQLite Database
 conn = sqlite3.connect('spotbot.db') # create or connect to the database
@@ -101,3 +102,5 @@ for id in ids:
     print (id)
 
 conn.close()
+
+print(f"{current_date.month} and {calendar.month_name[current_month]}")

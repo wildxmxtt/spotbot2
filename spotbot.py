@@ -165,7 +165,8 @@ async def reactChamp(ctx):
         try:
             message = await ctx.channel.fetch_message(msg_id[1])                        # Grab each message
             total_reactions = sum(reaction.count for reaction in message.reactions)     # grab the total amount of reacitons for respective message
-            messages.append((message, total_reactions, msg_id[0], msg_id[2]))                      # Add tuple of message, total reactions, and the spotify link
+            if total_reactions > 1:
+                messages.append((message, total_reactions-1, msg_id[0], msg_id[2]))       # Add tuple of message, total reactions, and the spotify link
         except discord.NotFound:
             print(f"{pgrm_signature}: Message with ID {msg_id[1]} not found")
         except discord.Forbidden:
@@ -190,7 +191,7 @@ async def reactChamp(ctx):
         member = guild.get_member(message[3])
 
         #will need username and link maybe?
-        field_value = f"{message[1]} reaction(s)\n"
+        field_value = f"{message[1]} reaction(s) - "
         field_value += f"[Listen Here]({message[2]})"
         embed.add_field(name=f"{loops}. {member.display_name}", value=field_value, inline=False)
         loops += 1

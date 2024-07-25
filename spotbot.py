@@ -18,6 +18,7 @@ with open("setup.json", 'r') as setupf:
     client_secret = (data['client_secret'])
     playlist_link = (data['playlist_link'])
     grab_past_flag = (data['grab_past_flag'])
+    leaderboards_flag = (data['leaderboards_flag'])
     discord_channel = (data['discord_channel'])
 
 
@@ -36,13 +37,18 @@ async def on_ready():
 #This is the help command that lets the user know all of the avaliable commands that can be used 
 @bot.command()
 async def hlp(ctx):
-    await ctx.reply("The commands for this bot go as follows: \n" + 
-    "[!]sLink (gives the user the link to the spotify playlist) \n" + 
-    "[!]grabPast (allows for the user to grab past songs sent in a chat, this can only be ran once) \n" +
-    "[!]r (gives the user a random song from the playlist!) \n" +
-    "When a user sends a messsage in THIS CHAT the bot will analyis that message, if it is a valid spotify link it will be placed into the playlist\n" 
-    
-    )
+    helpText = ("The commands for this bot go as follows: \n" + 
+        "[!]sLink (gives the user the link to the spotify playlist) \n" + 
+        "[!]grabPast (allows for the user to grab past songs sent in a chat, this can only be ran once) \n" +
+        "[!]r (gives the user a random song from the playlist!) \n")
+
+    if leaderboards_flag == 1:
+        helpText += ("[!]leaderboard (gives a leadearboard of all time highest contributing users) \n" +
+            "[!]thismonth (gives a leaderboard of this months hightst contributing users) \n" +
+            "[!]reactchamp (gives a leaderboard of this months most reacted contributed songs) \n")
+
+    await ctx.reply(helpText +
+            "When a user sends a messsage in this chat the bot will analyze that message, if it is a valid spotify link it will be placed into the playlist\n")
 
 #gives the link set in the setup.json file
 @bot.command()
@@ -82,6 +88,9 @@ async def r(ctx):
 # a request command to produce an all time leaderboard stats for the respective discord server 
 @bot.command()
 async def leaderboard(ctx):
+    # Check if the leaderboard information is enabled via setup.json
+    if leaderboards_flag == 0: return False
+
     # Connect to the SQLite Database
     conn = sqlite3.connect('spotbot.db')
     cur = conn.cursor()
@@ -107,6 +116,9 @@ async def leaderboard(ctx):
 # a request command to produce a leaderboard with this months stats for the respective discord server
 @bot.command()
 async def thismonth(ctx):
+    # Check if the leaderboard information is enabled via setup.json
+    if leaderboards_flag == 0: return False
+
     # Connect to the SQLite Database
     conn = sqlite3.connect('spotbot.db')
     cur = conn.cursor()
@@ -139,6 +151,9 @@ async def thismonth(ctx):
 # A request that produces a leaderboard with this months highest reacted songs
 @bot.command()
 async def reactChamp(ctx):
+    # Check if the leaderboard information is enabled via setup.json
+    if leaderboards_flag == 0: return False
+
     # warn user this may take a while
     await ctx.send(f"Grabbing messages - this may take a while...")
 

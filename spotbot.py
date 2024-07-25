@@ -8,6 +8,7 @@ import playlist_update
 from os import path
 import random
 import calendar
+from app import get_playlist_duration
 
 pgrm_signature = "spotbot.py: "
 
@@ -333,6 +334,9 @@ async def on_message(msg):
 
                     # Get the acheivement string (if any)
                     celebration = checkAchievement(cur.fetchone()[0])
+
+                    # duration = get_playlist_duration(playlist_link.split('/')[-1].split('?')[0])
+                    # print(f"{pgrm_signature}: DEBUG: duration of playlist in hours {duration}")
 
                     conn.close()
 

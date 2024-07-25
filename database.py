@@ -31,24 +31,24 @@ cur = conn.cursor()
 
 
 
-# cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
-# tables = cur.fetchall()
+cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
+tables = cur.fetchall()
 
-# # For each table, get and print column information
-# for table in tables:
-#     table_name = table[0]
-#     print(f"\nTable: {table_name}")
-#     print("-" * (len(table_name) + 7))
+# For each table, get and print column information
+for table in tables:
+    table_name = table[0]
+    print(f"\nTable: {table_name}")
+    print("-" * (len(table_name) + 7))
     
-#     # Get column information
-#     cur.execute(f"PRAGMA table_info({table_name})")
-#     columns = cur.fetchall()
+    # Get column information
+    cur.execute(f"PRAGMA table_info({table_name})")
+    columns = cur.fetchall()
     
-#     # Print column names and types
-#     for column in columns:
-#         col_name = column[1]
-#         col_type = column[2]
-#         print(f"{col_name}: {col_type}")
+    # Print column names and types
+    for column in columns:
+        col_name = column[1]
+        col_type = column[2]
+        print(f"{col_name}: {col_type}")
 
 # cur.execute("SELECT * FROM songs")
 # table = cur.fetchall()
@@ -84,23 +84,21 @@ cur = conn.cursor()
 
 # Print out massagesIDs from last month
 # Get the current year and month
-current_date = datetime.now()
-current_year = current_date.year
-current_month = current_date.month
+# current_date = datetime.now()
+# current_year = current_date.year
+# current_month = current_date.month
 
-# Get top 10 users and their number of songs added for the current month
-cur.execute("""
-    SELECT discord_message_id, timestamp, spotify_id
-    FROM songs
-    WHERE strftime('%Y', timestamp) = ? AND strftime('%m', timestamp) = ?
-    LIMIT 10
-""", (str(current_year), f"{current_month:02d}"))
+# # Get top 10 users and their number of songs added for the current month
+# cur.execute("""
+#     SELECT discord_message_id, timestamp, spotify_id
+#     FROM songs
+#     WHERE strftime('%Y', timestamp) = ? AND strftime('%m', timestamp) = ?
+#     LIMIT 10
+# """, (str(current_year), f"{current_month:02d}"))
 
-ids = cur.fetchall()
+# ids = cur.fetchall()
 
-for id in ids:
-    print (id)
+# for id in ids:
+#     print (id)
 
 conn.close()
-
-print(f"{current_date.month} and {calendar.month_name[current_month]}")

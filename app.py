@@ -112,26 +112,3 @@ def create_spotify_oauth():
     redirect_uri = url_for('redirectPage', _external=True), # Auto gernates this in the url_for http://localhost:5000/callback
     scope = 'playlist-modify-public user-library-read' )   
 
-# This places in app.py because of the use of spotipy
-# Returns the hours of songs in the playlist
-def get_playlist_duration(playlist_ID):
-    # Set up authentication
-    client_credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
-    sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
-
-    # get all tracks from the playlist
-    results = sp.playlist_items(playlist_ID)
-    tracks = results['items']
-
-    # Get all tracks if there are more than 100 in the playlist
-    while results['next']:
-        results = sp.next(results)
-        tracks.extend(results['items'])
-    
-    # Sum the duration of all songs in miliseconds
-    total_duration_ms = sum(track['track']['duration_ms'] for track in tracks if track['track'])
-
-    # Convert milliseconds to hours
-    duration_hours = total_duration_ms / (1000 * 60 * 60)
-    
-    return duration_hours

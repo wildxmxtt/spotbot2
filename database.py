@@ -11,6 +11,17 @@
 import sqlite3
 from datetime import datetime
 import calendar
+import json
+
+with open("setup.json", 'r') as setupf:
+    data = json.load(setupf)
+    TOKEN = (data['discord_token'])
+    client_id = (data['client_id'])
+    client_secret = (data['client_secret'])
+    playlist_link = (data['playlist_link'])
+    grab_past_flag = (data['grab_past_flag'])
+    leaderboards_flag = (data['leaderboards_flag'])
+    discord_channel = (data['discord_channel'])
 
 # Connect to or create SQLite Database
 conn = sqlite3.connect('spotbot.db') # create or connect to the database
@@ -18,17 +29,35 @@ conn = sqlite3.connect('spotbot.db') # create or connect to the database
 # Create a cursor
 cur = conn.cursor()
 
-# Create the "songs" table
-# cur.execute('''CREATE TABLE IF NOT EXISTS songs
-#              (song_table_ID INTEGER PRIMARY KEY, spotify_ID TEXT, sender_ID INTEGER, FOREIGN KEY (sender_ID) REFERENCES senders(sender_ID))''')
+# cur.execute('''
+#     CREATE TABLE IF NOT EXISTS songs (
+#         song_table_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+#         spotify_ID TEXT,
+#         sender_ID INTEGER,
+#         timestamp TEXT,
+#         discord_message_id TEXT
+#     )
+#     ''')
 
-# Create the "senders" table
-# cur.execute('''CREATE TABLE IF NOT EXISTS senders
-#              (sender_ID INTEGER PRIMARY KEY, username TEXT)''')
+# cur.execute('''CREATE TABLE IF NOT EXISTS playlist_duration_milestones
+#                  (playlist_id TEXT, milestone INTEGER, 
+#                   reached_at DATETIME, PRIMARY KEY (playlist_id, milestone))''')
+# conn.commit()
 
-# Get a list of tables in the database
-# cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
+# creating the milestones
+milestones = [1, 5, 10, 25, 50, 100, 250, 500, 1000]
 
+# for milestone in milestones:
+#     cur.execute('''INSERT INTO playlist_duration_milestones (playlist_id, milestone)
+#                 VALUES (?, ?)''',
+#                 (playlist_link.split('/')[-1].split('?')[0], milestone))
+#conn.commit()
+
+cur.execute('SELECT * FROM playlist_duration_milestones')
+table = cur.fetchall()
+
+for entry in table:
+    print(entry)
 
 
 cur.execute("SELECT name FROM sqlite_master WHERE type='table';")

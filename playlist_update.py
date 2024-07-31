@@ -39,7 +39,6 @@ def sendOff():
     #     TOKEN = (data['access_token'])
     #     refresh_token = (data['refresh_token'])
     #     expires_at = (data['expires_at'])
-    # another method made by me 7-30
 
     # #This function keep the user from having to get a new token manually every hour
     # def refesh_the_token(): 
@@ -193,6 +192,18 @@ def get_spotify_api_object(now, data, TOKEN, refresh_token, expires_at):
     print(pgrm_signature + "the time left on orginial token is: "+ str(time_left / 60) + "min")
     if(is_expried): #if token is expried, get a new token with the refresh token
         sp = spotipy.Spotify(auth=refresh_the_token(data, TOKEN, refresh_token))#Refreshes the token from now on after 
+        
+        # Now we must update the time that the token expires at
+        # Open the file for reading first
+        with open(".cache", 'r') as info:
+            data = json.load(info)
+
+        # Modify the data
+        data['expires_at'] = now + 3600
+
+        # Open the file again, this time for writing
+        with open(".cache", 'w') as info:
+            json.dump(data, info, indent=4)
     else:
         sp = spotipy.Spotify(auth=TOKEN) #creates object that interacts with spotify api; uses the first token generated; token only last 1 hour
 

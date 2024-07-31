@@ -331,12 +331,15 @@ async def on_message(msg):
                     cur = conn.cursor()
 
                     cur.execute("SELECT COUNT(*) FROM songs")
+                    songs = cur.fetchone()[0]
 
-                    # Get the acheivement string (if any)
-                    celebration = achievements.checkAchievement(cur.fetchone()[0], grab_past_flag)
+                    # Every 10 songs check for achievements (For perfromance)
+                    if (songs % 10 == 0):
+                        # Get the acheivement string (if any)
+                        celebration = achievements.checkAchievement(songs, grab_past_flag)
 
-                    # Get duration achievement (if any)
-                    duration = achievements.checkDurationAchievement(playlist_update.get_playlist_duration(playlist_link))
+                        # Get duration achievement (if any)
+                        duration = achievements.checkDurationAchievement(playlist_update.get_playlist_duration(playlist_link))
 
                     # duration = get_playlist_duration(playlist_link.split('/')[-1].split('?')[0])
                     # print(f"{pgrm_signature}: DEBUG: duration of playlist in hours {duration}")

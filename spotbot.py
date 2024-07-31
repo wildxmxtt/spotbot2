@@ -334,7 +334,7 @@ async def on_message(msg):
                     songs = cur.fetchone()[0]
 
                     # Every 10 songs check for achievements (For perfromance)
-                    if (songs % 10 == 0):
+                    if (songs % 5 == 0):
                         # Get the acheivement string (if any)
                         celebration = achievements.checkAchievement(songs, grab_past_flag)
 

@@ -41,6 +41,7 @@ async def hlp(ctx):
     "[!]sLink (gives the user the link to the spotify playlist) \n" + 
     "[!]grabPast (allows for the user to grab past songs sent in a chat, this can only be ran once) \n" +
     "[!]r (gives the user a random song from the playlist!) \n" +
+    "[!]waves (generate Spotify's wave codes png image files.)\n" +
     "When a user sends a messsage in THIS CHAT the bot will analyis that message, if it is a valid spotify link it will be placed into the playlist\n" 
     
     )
@@ -177,7 +178,7 @@ async def waves(ctx, arg):
 
         # Catching unexpected errors
         except Exception as err:
-            await ctx.send("Error occurred: %s" % err)
+            print(pgrm_signature + "Error occurred -> %s" % err)
 
 
 #checks for duplicates before sending songs off to uri.txt and recording in database

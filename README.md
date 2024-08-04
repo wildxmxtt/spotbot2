@@ -1,15 +1,23 @@
-# Spotbot
-*Made with python 3.10.9 , Make sure you have this installed !*
+# Spotbot 2
+A discord bot that scrapes users spotify links from a set channel and automatically adds those songs to a set spotify playlist. Think of it like and *over* engineered collaborative playlist.
 
-A discord bot that scrapes users spotify links from a set channel and automatically adds those songs to a set spotify playlist. Think of it like and *over* engineered collabrtive playlist.
 
-**This readME file is meant to be looked at with the Image_refrences.pdf found in this repo**
+## Table of Contents
+- [Requirements](#requirements)
+- [Install](#install)
+- [Contributing](#contributing)
+- [License](#license)
 
-How to setup:
+
+## Requirements
+[![Python 3.10.9](https://img.shields.io/badge/Python-3.10.9-306a98?logo=Python&logoColor=fcdf5a)](https://www.python.org/) 
+
+
+## Install
 1. Go to https://developer.spotify.com/dashboard/ refimage1 in image_refrences.pdf 
     
     a. Press Login
-    
+
     b. Create App (refimage2)
     
     c. Copy and paste the corrosponging client id and client secret in their respective places in setup.json (refimage3)
@@ -40,20 +48,22 @@ How to setup:
 
 3. Get spotify playlist link that the bot will add to
     
-    a.Add that link into setup.json in the correct field ex:"https://open.spotify.com/playlist/0XM....8226c884a3d" (needs to be a playlist you made on your own personal spotify account)
-    
+    a. Add that link into setup.json in the correct field ex:"https://open.spotify.com/playlist/0XM....8226c884a3d" (needs to be a playlist you made on your own personal spotify account)
     
 4. All fields in setup.json should be filled out and look like refimage12
 
 5. Install requrements.txt to your machine 
-      ```cmd
+    
+    ```cmd 
     pip install -r requirements.txt
     ```
+    
 6. Run app.py (only needs to be done once)
     a. In your terminal type flask run
     ```cmd
     flask run
     ```
+
     b. Go to https://localhost:5000
     
     c. Login with your spotify username and password
@@ -66,14 +76,25 @@ How to setup:
     ```cmd
     python3 spotbot.py
     ```
+
     (If you dont have past songs you want to grab skip steps b and c and set the grabpast flag to 1 in setup.json or else it will break the code)
     
-    a.Once in the terminal it should read "spotbot.py: SpotifyBot: ON" (refimage16)
+    a. Once in the terminal it should read "spotbot.py: SpotifyBot: ON" (refimage16)
     
-    b.Type [!grabPast] in the channel you specified in step 2j; This will grab all past spotify links sent in the chat **If you want to run this command and you have more than 500000 messages in your chat go to *line 62* in spotbot.py and increase the number as much as needed** 
+    b. Type `!grabPast` in the channel you specified in step 2j; This will grab all past spotify links sent in the chat **If you want to run this command and you have more than 500000 messages in your chat go to *line 62* in spotbot.py and increase the number as much as needed** 
     
-    c. Once [!grabPast] is ran you should see it act like refrence (image18), grabpast can only be ran once, if this needs to be changed go to the setup.json file and set the flag back to 0 instead of 1
+    c. Once `!grabPast` is ran you should see it act like refrence (image18), grabpast can only be ran once, if this needs to be changed go to the setup.json file and set the flag back to 0 instead of 1
 
 8. Now when songs are sent to the channel it will automatically send them to spotify! (refimage 20 & 21)
 
-Enjoy!
+
+## Contributing
+If something is wrong, [Open an issue.](http://github.com/wildxmxtt/spotbot2/issues/new)
+
+This project exists thank to all the people who contribute.
+
+<a href="https://github.com/wildxmxtt/spotbot2/graphs/contributors"><img src="https://contrib.rocks/image?repo=wildxmxtt/spotbot2" /></a>
+
+
+## License
+[MIT](LICENSE) © Matthew Wilde

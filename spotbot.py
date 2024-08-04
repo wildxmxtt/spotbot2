@@ -9,6 +9,8 @@ from os import path
 import random
 import calendar
 import achievements
+import aiohttp
+import io
 
 pgrm_signature = "spotbot.py: "
 
@@ -41,7 +43,8 @@ async def hlp(ctx):
     helpText = ("The commands for this bot go as follows: \n" + 
         "[!]sLink (gives the user the link to the spotify playlist) \n" + 
         "[!]grabPast (allows for the user to grab past songs sent in a chat, this can only be ran once) \n" +
-        "[!]r (gives the user a random song from the playlist!) \n")
+        "[!]r (gives the user a random song from the playlist!) \n" +
+        "[!]waves (generate Spotify's wave codes png image files.)\n")
 
     if leaderboards_flag == 1:
         helpText += ("[!]leaderboard (gives a leadearboard of all time highest contributing users) \n" +
@@ -50,6 +53,7 @@ async def hlp(ctx):
 
     await ctx.reply(helpText +
             "When a user sends a messsage in this chat the bot will analyze that message, if it is a valid spotify link it will be placed into the playlist\n")
+    
 
 #gives the link set in the setup.json file
 @bot.command()
@@ -358,6 +362,32 @@ async def on_message(msg):
             print(pgrm_signature + "Not valid Spotify link")
     
         await bot.process_commands(msg)
+
+
+
+@bot.command()
+async def waves(ctx, arg):
+    # Command only functions within the global variable: discord_channel, specified in setup.json
+    if ctx.channel.id == discord_channel:
+        try:
+            # Regex to ensure argument passed to command is acceptable
+            uri_regex = r'https://open.spotify.com/track/(.+?)\?si='
+            wave_uri = re.search(uri_regex, arg)
+            # Format URL string for async request
+            wave_url = 'https://scannables.scdn.co/uri/plain/png/000000/white/640/spotify:track:%s' % (wave_uri.group(1))
+            # Async request for a response from variable: wave_url
+            async with aiohttp.ClientSession() as wave_session:
+                async with wave_session.get(wave_url) as wave_resp:
+                    # Catch "unsuccessful" (not 200) response status
+                    if wave_resp.status != 200:
+                        return await ctx.send('Wavecode not found')
+                    wave_img = io.BytesIO(await wave_resp.read())
+            # Sends image structured in Bytes as a discord.File in the channel
+            await ctx.send(file=discord.File(wave_img, '%s_wavecode.png' % (wave_uri.group(1))))
+
+        # Catching unexpected errors
+        except Exception as err:
+            print(pgrm_signature + "Error occurred -> %s" % err)
 
 
 #checks for duplicates before sending songs off to uri.txt and recording in database

@@ -53,11 +53,16 @@ A discord bot that scrapes users spotify links from a set channel and automatica
 4. All fields in setup.json should be filled out and look like refimage12
 
 5. Install requrements.txt to your machine 
-    >pip install -r requirements.txt
+    
+    ```cmd 
+    pip install -r requirements.txt
+    ```
     
 6. Run app.py (only needs to be done once)
     a. In your terminal type flask run
-    >flask run
+    ```cmd
+    flask run
+    ```
 
     b. Go to https://localhost:5000
     
@@ -68,7 +73,9 @@ A discord bot that scrapes users spotify links from a set channel and automatica
     e. Ctrl + c in terminal (app.py will never need to be ran again, as it is only used to **generate** a token for your bot to use)
     
  7. Run spotbot.py
-    >python3 spotbot.py
+    ```cmd
+    python3 spotbot.py
+    ```
 
     (If you dont have past songs you want to grab skip steps b and c and set the grabpast flag to 1 in setup.json or else it will break the code)
     

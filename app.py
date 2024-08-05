@@ -4,6 +4,7 @@ from spotipy.oauth2 import SpotifyOAuth
 import time
 import json
 from datetime import datetime
+from spotipy.oauth2 import SpotifyClientCredentials
 
 
 #import DISCORD.main as dm #aiaised as dm
@@ -109,4 +110,5 @@ def create_spotify_oauth():
     client_id,
     client_secret,
     redirect_uri = url_for('redirectPage', _external=True), # Auto gernates this in the url_for http://localhost:5000/callback
-    scope = 'playlist-modify-public user-library-read' )    
+    scope = 'playlist-modify-public user-library-read' )   
+

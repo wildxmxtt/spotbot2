@@ -7,6 +7,8 @@ import json
 import playlist_update
 from os import path
 import random
+import calendar
+import achievements
 import aiohttp
 import io
 
@@ -19,6 +21,7 @@ with open("setup.json", 'r') as setupf:
     client_secret = (data['client_secret'])
     playlist_link = (data['playlist_link'])
     grab_past_flag = (data['grab_past_flag'])
+    leaderboards_flag = (data['leaderboards_flag'])
     discord_channel = (data['discord_channel'])
 
 
@@ -37,14 +40,20 @@ async def on_ready():
 #This is the help command that lets the user know all of the avaliable commands that can be used 
 @bot.command()
 async def hlp(ctx):
-    await ctx.reply("The commands for this bot go as follows: \n" + 
-    "[!]sLink (gives the user the link to the spotify playlist) \n" + 
-    "[!]grabPast (allows for the user to grab past songs sent in a chat, this can only be ran once) \n" +
-    "[!]r (gives the user a random song from the playlist!) \n" +
-    "[!]waves (generate Spotify's wave codes png image files.)\n" +
-    "When a user sends a messsage in THIS CHAT the bot will analyis that message, if it is a valid spotify link it will be placed into the playlist\n" 
+    helpText = ("The commands for this bot go as follows: \n" + 
+        "[!]sLink (gives the user the link to the spotify playlist) \n" + 
+        "[!]grabPast (allows for the user to grab past songs sent in a chat, this can only be ran once) \n" +
+        "[!]r (gives the user a random song from the playlist!) \n" +
+        "[!]waves (generate Spotify's wave codes png image files.)\n")
+
+    if leaderboards_flag == 1:
+        helpText += ("[!]leaderboard (gives a leadearboard of all time highest contributing users) \n" +
+            "[!]thismonth (gives a leaderboard of this months hightst contributing users) \n" +
+            "[!]reactchamp (gives a leaderboard of this months most reacted contributed songs) \n")
+
+    await ctx.reply(helpText +
+            "When a user sends a messsage in this chat the bot will analyze that message, if it is a valid spotify link it will be placed into the playlist\n")
     
-    )
 
 #gives the link set in the setup.json file
 @bot.command()
@@ -81,7 +90,180 @@ async def r(ctx):
     # Close the connection
     conn.close()
 
+# a request command to produce an all time leaderboard stats for the respective discord server 
+@bot.command()
+async def leaderboard(ctx):
+    # Check if the leaderboard information is enabled via setup.json
+    if leaderboards_flag == 0: return False
 
+    # Connect to the SQLite Database
+    conn = sqlite3.connect('spotbot.db')
+    cur = conn.cursor()
+
+    # Get top 10 users and their number of songs added
+    cur.execute("""
+        SELECT sender_ID, COUNT(*) as song_count
+        FROM songs
+        GROUP BY sender_ID
+        ORDER BY song_count DESC
+    """)
+
+    # Fetch all
+    results = cur.fetchall()
+
+    # Send the embed
+    title="All Time Leaderboard"
+    await sendLeaderBoardEmbed(ctx, results, title)
+
+    # Close the connection
+    conn.close()
+
+# a request command to produce a leaderboard with this months stats for the respective discord server
+@bot.command()
+async def thismonth(ctx):
+    # Check if the leaderboard information is enabled via setup.json
+    if leaderboards_flag == 0: return False
+
+    # Connect to the SQLite Database
+    conn = sqlite3.connect('spotbot.db')
+    cur = conn.cursor()
+
+    # Get the current year and month
+    current_date = datetime.now()
+    current_year = current_date.year
+    current_month = current_date.month
+
+    # Get top 10 users and their number of songs added for the current month
+    cur.execute("""
+        SELECT sender_ID, COUNT(*) as song_count
+        FROM songs
+        WHERE strftime('%Y', timestamp) = ? AND strftime('%m', timestamp) = ?
+        GROUP BY sender_ID
+        ORDER BY song_count DESC
+        LIMIT 10
+    """, (str(current_year), f"{current_month:02d}"))
+
+    # Fetch all
+    results = cur.fetchall()
+
+    # Send the embed
+    title="This Months Stats"
+    await sendLeaderBoardEmbed(ctx, results, title)
+
+    # Close the connection
+    conn.close()
+
+# A request that produces a leaderboard with this months highest reacted songs
+@bot.command()
+async def reactChamp(ctx):
+    # Check if the leaderboard information is enabled via setup.json
+    if leaderboards_flag == 0: return False
+
+    # warn user this may take a while
+    await ctx.send(f"Grabbing messages - this may take a while...")
+
+    # Connect to or create SQLite Database
+    conn = sqlite3.connect('spotbot.db') # create or connect to the database
+    cur = conn.cursor()
+
+    current_date = datetime.now()
+    current_year = current_date.year
+    current_month = current_date.month
+
+    # Get top 10 users and their number of songs added for the current month
+    cur.execute("""
+        SELECT spotify_id, discord_message_id, sender_ID
+        FROM songs
+        WHERE strftime('%Y', timestamp) = ? AND strftime('%m', timestamp) = ?
+    """, (str(current_year), f"{current_month:02d}"))
+
+    message_ids = cur.fetchall()
+
+    messages = []
+    # loop through each message ID
+    for msg_id in message_ids:
+        try:
+            message = await ctx.channel.fetch_message(msg_id[1])                        # Grab each message
+            total_reactions = sum(reaction.count for reaction in message.reactions)     # grab the total amount of reacitons for respective message
+            if total_reactions > 1:
+                messages.append((message, total_reactions-1, msg_id[0], msg_id[2]))       # Add tuple of message, total reactions, and the spotify link
+        except discord.NotFound:
+            print(f"{pgrm_signature}: Message with ID {msg_id[1]} not found")
+        except discord.Forbidden:
+            print(f"{pgrm_signature}: Bot doesn't have permission to fetch message {msg_id[0]}")
+        except discord.HTTPException:
+            print(f"Failed to fetch message {msg_id[1]}")
+
+    # Sort the results
+    # sorted is fed messages, key=lambda (idk why), x[1] for the reaction cound, 
+    # and reverse true for descending orde. [:5] to get the top 5
+    top_messages = sorted(messages, key=lambda x: x[1], reverse=True)[:5]
+
+    # make and send the embed
+    title = f"Reaction Champions for {calendar.month_name[current_month]}"
+    embed = discord.Embed(title=title, color=0x1DB954, url=playlist_link)
+    embed.description = "The top 5 highest reacted songs this month"
+
+    loops = 1
+    guild = ctx.guild
+    for message in top_messages:
+        # Get username
+        member = guild.get_member(message[3])
+
+        #will need username and link maybe?
+        field_value = f"{message[1]} reaction(s) - "
+        field_value += f"[Listen Here]({message[2]})"
+        embed.add_field(name=f"{loops}. {member.display_name}", value=field_value, inline=False)
+        loops += 1
+
+    await ctx.send(embed=embed)
+
+    conn.close()
+
+# Using the result from an SQL querey, an embed is created and sent
+async def sendLeaderBoardEmbed(ctx, results, title):
+    userIDs = [row[0] for row in results]
+    usernames = {}
+    guild = ctx.guild
+    # For each user ID in the results get the username
+    for userID in userIDs:
+        try:
+            member = guild.get_member(userID)
+            if member is None:
+                print(f"Debug: Fetching member {userID}")
+                member = await guild.fetch_member(userID)
+            
+            # Attempt to get the display name, if not available get the name
+            if member.display_name:
+                usernames[userID] = member.display_name
+            else:
+                usernames[userID] = member.name
+            
+            print(f"{pgrm_signature}: Debug - User ID: {userID}, Name: {member.name}, Display name: {member.display_name}")
+
+        except discord.NotFound:
+            usernames[userID] = "Unknown User"
+
+    # Create the embed
+    embed = discord.Embed(title=title, color=0x1DB954, url=playlist_link)
+    embed.description = "The top 10 users who have sent the most songs:"
+
+    loops = 1
+
+    for row in results:
+        if loops != 10:
+            discord_id, song_count = row
+            username = usernames.get(discord_id, "Unknown")
+            
+            # Add the new information to the response
+            # response += (f"\n{username:8s} | {song_count:15d}")
+            embed.add_field(name=f"{loops}. {username}", value=f"{song_count} songs", inline=False)
+            loops += 1
+        else:
+            # Only print the first 10
+            break
+
+    await ctx.send(embed=embed)
 
 #This is to grab the past songs that have been sent to the channel
 @bot.command()
@@ -147,6 +329,33 @@ async def on_message(msg):
                     # Warn users that previous songs may not be accounted for as grabPast has NOT been called
                     if(grab_past_flag == 0):
                         await msg.reply("WARNING GRAB PAST FLAG IS STILL ZERO, IF THERE ARE NO PAST SONGS YOU NEED TO GRAB. SET THE GRAB PAST FLAG TO ZERO IN setup.json AND RESTART spotbot.py. THIS WILL CAUSE ERRORS ELSEWISE")
+                    
+                    # Check for acheivements (connect to db, get song count)
+                    conn = sqlite3.connect('spotbot.db')
+                    cur = conn.cursor()
+
+                    cur.execute("SELECT COUNT(*) FROM songs")
+                    songs = cur.fetchone()[0]
+
+                    # Every 10 songs check for achievements (For perfromance)
+                    if (songs % 5 == 0 or songs == 69):
+                        # Get the acheivement string (if any)
+                        celebration = achievements.checkAchievement(songs, grab_past_flag)
+
+                        # Get duration achievement (if any)
+                        duration = achievements.checkDurationAchievement(playlist_update.get_playlist_duration(playlist_link))
+
+                    # duration = get_playlist_duration(playlist_link.split('/')[-1].split('?')[0])
+                    # print(f"{pgrm_signature}: DEBUG: duration of playlist in hours {duration}")
+
+                    conn.close()
+
+                    # If there is a celebration, send the message
+                    if(celebration):
+                        await msg.channel.send(celebration)
+                    if(duration):
+                        await msg.channel.send(duration)
+
 
         else:
             # Print to the terminal that a message was recieved but it is NOT a spotify link
@@ -214,7 +423,7 @@ def dupCheck(msg):
         cur.execute("INSERT INTO songs (spotify_ID, sender_ID, timestamp, discord_message_id) VALUES (?, ?, ?, ?)", 
                     (stripped, getSender(msg), getTimestamp(msg), getMessageID(msg)))
         conn.commit()
-    
+
     # Add to the uri.txt file to be sent off
     uritxt(msg.content)
 
@@ -280,6 +489,8 @@ def uritxt(link):
 
         print(pgrm_signature + "Uri text file written to succesfully!\n")
         print(pgrm_signature + "Sending songs off to spotify")
+
+
     
 def update_gp_flag(): 
  ###Update grab_past_flag#####

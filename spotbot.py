@@ -514,6 +514,48 @@ def update_gp_flag():
                         separators=(',',': '))
     
         print(pgrm_signature + 'Successfully updated setup.json')
+
+def initialize_database(file):
+    # Check to see if the database file already exists
+    db_exists = path.exists(file)
+
+    # Connect to the database (this will create it if it doesn't exist)
+    conn = sqlite3.connect(file)
+    cursor = conn.cursor()
+
+    # If the databse doesn't exist, create the tables
+    if not db_exists:
+        tabels = [
+            """
+            CREATE TABLE IF NOT EXISTS songs (
+            song_table_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            spotify_ID TEXT,
+            sender_ID INTEGER,
+            timestamp TEXT,
+            discord_message_id TEXT
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS playlist_duration_mileston (
+            playlist_id TEXT,
+            milestone INTEGER,
+            reached_at DATETIME,
+            PRIMARY KEY (playlist_id, milestone)
+            )
+            """
+        ]
+
+        conn = sqlite3.connect(file)
+        cur = conn.cursor()
+
+        # Execute the statements
+        for table in tabels:
+            cur.execute(table)
+        print(f"{pgrm_signature}: Fresh databse initialized.")
+
+        # Commit the changes
+        conn.commit()
+        conn.close()
     
 # Get the message sender data
 def getSender(msg):
@@ -541,5 +583,8 @@ def getMessageID(msg):
 
     # return the sender ID to be used in dupCheck to be recorded in the songs playlist
     return message_id
+
+# Initialize the database if not created yet
+initialize_database("spotbot.db")
 
 bot.run(TOKEN)

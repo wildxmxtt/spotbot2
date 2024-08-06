@@ -519,10 +519,6 @@ def initialize_database(file):
     # Check to see if the database file already exists
     db_exists = path.exists(file)
 
-    # Connect to the database (this will create it if it doesn't exist)
-    conn = sqlite3.connect(file)
-    cursor = conn.cursor()
-
     # If the databse doesn't exist, create the tables
     if not db_exists:
         tabels = [

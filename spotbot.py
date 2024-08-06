@@ -536,7 +536,7 @@ def initialize_database(file):
             )
             """,
             """
-            CREATE TABLE IF NOT EXISTS playlist_duration_mileston (
+            CREATE TABLE IF NOT EXISTS playlist_duration_milestones (
             playlist_id TEXT,
             milestone INTEGER,
             reached_at DATETIME,

@@ -21,7 +21,7 @@ with open("setup.json", 'r') as setupf:
     client_secret = (data['client_secret'])
     playlist_link = (data['playlist_link'])
     grab_past_flag = (data['grab_past_flag'])
-    leaderboards_flag = (data['leaderboards_flag'])
+    #leaderboards_flag = (data['leaderboards_flag'])
     discord_channel = (data['discord_channel'])
 
 

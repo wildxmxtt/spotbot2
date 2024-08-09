@@ -4,6 +4,7 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import requests
 import base64
+import sqlCheat as sc
 
 with open("setup.json", 'r') as info:
         data = json.load(info)
@@ -21,18 +22,25 @@ def sendOff():
     #     playlist_link = (data['playlist_link']) 
     #     client_id = (data['client_id'])
     #     client_secret = (data['client_secret'])
-    open('spotify.json', 'w+').close() #clears old token info if there is any
+    ############open('spotify.json', 'w+').close() #clears old token info if there is any
 
-    file1 = open("spotify.json", "a") #prepares file to be written to 
+    #file1 = open("spotify.json", "a") #prepares file to be written to 
 
-    file2 = open(".cache", "r+")#reads the cached file 
-    rline2 = file2.readlines()
-    for line in rline2:
-        content = line
+    with open(".cache", 'r') as fileCache: 
+        file2 = json.load(fileCache)
+        sc.updateCreds('access_token',file2['access_token'])
+        sc.updateCreds('token_type',file2['token_type'])
+        sc.updateCreds('expires_in',file2['expires_in'])
+        sc.updateCreds('refresh_token',file2['refresh_token'])
+        sc.updateCreds('scope',file2['scope'])
+        sc.updateCreds('expires_at',file2['expires_at'])
+    #rline2 = file2.readlines()
+    #for line in rline2:
+    #    content = line
 
-        file1.write(content)#writes the content into the json file
+    #    file1.write(content)#writes the content into the json file
         
-    file1.close()
+    #file1.close()
 
     # with open("spotify.json", 'r') as info: #reads the json file that was just written to 
     #     data = json.load(info)
@@ -175,14 +183,24 @@ def refresh_the_token(data, TOKEN, refresh_token):
             print(pgrm_signature + "ERROR! The response we got was: "+ str(response))
             return TOKEN #last ditch to try and make it work if TOKEN varaible is still active
         
+# def get_spotify_json():
+#     with open("spotify.json", 'r') as info: #reads the json file that was just written to 
+#         data = json.load(info)
+#         TOKEN = (data['access_token'])
+#         refresh_token = (data['refresh_token'])
+#         expires_at = (data['expires_at'])
+# 
+#     return data, TOKEN, refresh_token, expires_at
+
 def get_spotify_json():
-    with open("spotify.json", 'r') as info: #reads the json file that was just written to 
-        data = json.load(info)
-        TOKEN = (data['access_token'])
-        refresh_token = (data['refresh_token'])
-        expires_at = (data['expires_at'])
+    data = sc.fakeJson()
+    TOKEN = sc.readCred('access_token')
+    refresh_token = sc.readCred('refresh_token')
+    expires_at = int(sc.readCred('expires_at'))
 
     return data, TOKEN, refresh_token, expires_at
+
+
 
 def get_spotify_api_object(now, data, TOKEN, refresh_token, expires_at):
     is_expried = expires_at - now < 60 #checks to see if the token is expired, is a boolean variable
@@ -191,18 +209,19 @@ def get_spotify_api_object(now, data, TOKEN, refresh_token, expires_at):
 
     print(pgrm_signature + "the time left on orginial token is: "+ str(time_left / 60) + "min")
     if(is_expried): #if token is expried, get a new token with the refresh token
+        print('Hey jade it is making it to the expired list')
         sp = spotipy.Spotify(auth=refresh_the_token(data, TOKEN, refresh_token))#Refreshes the token from now on after 
         
         # Now we must update the time that the token expires at
         # Open the file for reading first
-        with open(".cache", 'r') as info:
+        with open(".cache", 'r+') as info:
             data = json.load(info)
 
         # Modify the data
         data['expires_at'] = now + 3600
 
         # Open the file again, this time for writing
-        with open(".cache", 'w') as info:
+        with open(".cache", 'r+') as info:
             json.dump(data, info, indent=4)
     else:
         sp = spotipy.Spotify(auth=TOKEN) #creates object that interacts with spotify api; uses the first token generated; token only last 1 hour

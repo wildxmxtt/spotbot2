@@ -163,3 +163,4 @@ cython_debug/
 setup.json
 setup.json
 spotify.json
+creds.db

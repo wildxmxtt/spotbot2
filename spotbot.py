@@ -14,6 +14,8 @@ import io
 
 pgrm_signature = "spotbot.py: "
 
+playlist_array = []
+
 with open("setup.json", 'r') as setupf:
     data = json.load(setupf)
     TOKEN = (data['discord_token'])
@@ -24,9 +26,13 @@ with open("setup.json", 'r') as setupf:
     leaderboards_flag = (data['leaderboards_flag'])
 
     for playlist in playlists:
+        # Extract playlist attributes
         playlist_name = playlist['playlist_name']
         playlist_link = playlist['playlist_link']
-        playlist
+        discord_channel = playlist['discord_channel']
+        
+        # Add to playlist array
+        playlist_array.append([playlist_name, playlist_link, discord_channel])
 
 
 intents = discord.Intents.all()
@@ -307,65 +313,77 @@ async def grabPast(ctx):
 
 @bot.event
 async def on_message(msg):
-    #grabs the discord channel specified in setup.json
-    if msg.channel.id == discord_channel:
-    #once again, all the file work can be moved over to the dupCheck() function for single file handling
-        strCheck = "https://open.spotify.com/track"
+    # Loop through available playlists
+    for playlist in playlist_array:
 
-        if re.search(strCheck, msg.content):
-            if not "The random song you got was:" in str(msg.content): # Without this it would catch all songs comand as a new link for some reason.
-                print(pgrm_signature + "Valid Spotify Link")
+        # Loop through eache playlists specified channels
+        for channel in playlist[2]:
 
-                checkEmoji = "☑️"
-                rEmoji = "🔁" 
+            # If the link is sent into the chat specified
+            if msg.channel.id == channel:
+                # Record playlist link
+                playlist_link = playlist[1]
 
-                # Check to see if the song is duplicate, if not add it to the DB
-                test = dupCheck(msg)
+                #once again, all the file work can be moved over to the dupCheck() function for single file handling
+                strCheck = "https://open.spotify.com/track"
 
-                #Decides what emoji to add based on if it is a duplicate or not
-                if(test == True):
-                    await msg.add_reaction (rEmoji)
+                if re.search(strCheck, msg.content):
+                    if not "The random song you got was:" in str(msg.content): # Without this it would catch all songs comand as a new link for some reason.
+                        print(pgrm_signature + "Valid Spotify Link")
+
+                        checkEmoji = "☑️"
+                        rEmoji = "🔁" 
+
+                        # Check to see if the song is duplicate, if not add it to the DB
+                        test = dupCheck(msg)
+
+                        #Decides what emoji to add based on if it is a duplicate or not
+                        if(test == True):
+                            await msg.add_reaction (rEmoji)
+                        else:
+                            # Once added to DB send to spotify to add to playlist
+                            print(pgrm_signature + playlist_update.sendOff(playlist_link))
+                            await msg.add_reaction(checkEmoji) #adds emoji when song is added to playlist
+
+                            # Warn users that previous songs may not be accounted for as grabPast has NOT been called
+                            if(grab_past_flag == 0):
+                                await msg.reply("WARNING GRAB PAST FLAG IS STILL ZERO, IF THERE ARE NO PAST SONGS YOU NEED TO GRAB. SET THE GRAB PAST FLAG TO ZERO IN setup.json AND RESTART spotbot.py. THIS WILL CAUSE ERRORS ELSEWISE")
+                            
+                            # Check for acheivements (connect to db, get song count)
+                            conn = sqlite3.connect('spotbot.db')
+                            cur = conn.cursor()
+
+                            cur.execute("SELECT COUNT(*) FROM songs")
+                            songs = cur.fetchone()[0]
+
+                            # Every 10 songs check for achievements (For perfromance)
+                            if (songs % 5 == 0 or songs == 69):
+                                # Get the acheivement string (if any)
+                                celebration = achievements.checkAchievement(songs, grab_past_flag)
+
+                                # Get duration achievement (if any)
+                                duration = achievements.checkDurationAchievement(playlist_update.get_playlist_duration(playlist_link))
+
+                            # duration = get_playlist_duration(playlist_link.split('/')[-1].split('?')[0])
+                            # print(f"{pgrm_signature}: DEBUG: duration of playlist in hours {duration}")
+
+                            conn.close()
+
+                            # If there is a celebration, send the message
+                            if(celebration):
+                                await msg.channel.send(celebration)
+                            if(duration):
+                                await msg.channel.send(duration)
+
+
                 else:
-                    # Once added to DB send to spotify to add to playlist
-                    print(pgrm_signature + playlist_update.sendOff())
-                    await msg.add_reaction(checkEmoji) #adds emoji when song is added to playlist
+                    # Print to the terminal that a message was recieved but it is NOT a spotify link
+                    print(pgrm_signature + "Not valid Spotify link")
+            
+                await bot.process_commands(msg)
 
-                    # Warn users that previous songs may not be accounted for as grabPast has NOT been called
-                    if(grab_past_flag == 0):
-                        await msg.reply("WARNING GRAB PAST FLAG IS STILL ZERO, IF THERE ARE NO PAST SONGS YOU NEED TO GRAB. SET THE GRAB PAST FLAG TO ZERO IN setup.json AND RESTART spotbot.py. THIS WILL CAUSE ERRORS ELSEWISE")
-                    
-                    # Check for acheivements (connect to db, get song count)
-                    conn = sqlite3.connect('spotbot.db')
-                    cur = conn.cursor()
-
-                    cur.execute("SELECT COUNT(*) FROM songs")
-                    songs = cur.fetchone()[0]
-
-                    # Every 10 songs check for achievements (For perfromance)
-                    if (songs % 5 == 0 or songs == 69):
-                        # Get the acheivement string (if any)
-                        celebration = achievements.checkAchievement(songs, grab_past_flag)
-
-                        # Get duration achievement (if any)
-                        duration = achievements.checkDurationAchievement(playlist_update.get_playlist_duration(playlist_link))
-
-                    # duration = get_playlist_duration(playlist_link.split('/')[-1].split('?')[0])
-                    # print(f"{pgrm_signature}: DEBUG: duration of playlist in hours {duration}")
-
-                    conn.close()
-
-                    # If there is a celebration, send the message
-                    if(celebration):
-                        await msg.channel.send(celebration)
-                    if(duration):
-                        await msg.channel.send(duration)
-
-
-        else:
-            # Print to the terminal that a message was recieved but it is NOT a spotify link
-            print(pgrm_signature + "Not valid Spotify link")
-    
-        await bot.process_commands(msg)
+                # Return True to show success and break from any loops
+                return True
 
 
 
@@ -524,33 +542,38 @@ def initialize_database(file):
     db_exists = path.exists(file)
 
     # If the databse doesn't exist, create the tables
+    tables = []
     if not db_exists:
-        tabels = [
-            """
-            CREATE TABLE IF NOT EXISTS songs (
-            song_table_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-            spotify_ID TEXT,
-            sender_ID INTEGER,
-            timestamp TEXT,
-            discord_message_id TEXT
-            )
-            """,
-            """
-            CREATE TABLE IF NOT EXISTS playlist_duration_milestones (
-            playlist_id TEXT,
-            milestone INTEGER,
-            reached_at DATETIME,
-            PRIMARY KEY (playlist_id, milestone)
-            )
-            """
-        ]
+        for playlist in playlist_array:
+            tables.append(
+                f"""
+                CREATE TABLE IF NOT EXISTS {playlist[0]} (
+                song_table_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                spotify_ID TEXT,
+                sender_ID INTEGER,
+                timestamp TEXT,
+                discord_message_id TEXT
+                )
+                """,
+                f"""
+                CREATE TABLE IF NOT EXISTS {playlist[0]}_duration_milestones (
+                playlist_id TEXT,
+                milestone INTEGER,
+                reached_at DATETIME,
+                PRIMARY KEY (playlist_id, milestone)
+                )
+                """)
 
         conn = sqlite3.connect(file)
         cur = conn.cursor()
 
         # Execute the statements
-        for table in tabels:
-            cur.execute(table)
+        for table in tables:
+            # Create song table
+            cur.execute(table[0])
+
+            # Create duration table
+            cur.execute(table[1])
         print(f"{pgrm_signature}: Fresh databse initialized.")
 
         # Commit the changes

@@ -545,7 +545,7 @@ def initialize_database(file):
     tables = []
     if not db_exists:
         for playlist in playlist_array:
-            tables.append(
+            tables.append([
                 f"""
                 CREATE TABLE IF NOT EXISTS {playlist[0]} (
                 song_table_ID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -562,7 +562,7 @@ def initialize_database(file):
                 reached_at DATETIME,
                 PRIMARY KEY (playlist_id, milestone)
                 )
-                """)
+                """])
 
         conn = sqlite3.connect(file)
         cur = conn.cursor()
@@ -574,11 +574,71 @@ def initialize_database(file):
 
             # Create duration table
             cur.execute(table[1])
-        print(f"{pgrm_signature}: Fresh databse initialized.")
+        print(f"{pgrm_signature}: Fresh database(s) initialized.")
 
         # Commit the changes
         conn.commit()
         conn.close()
+
+        # Break from the function if fresh tables are created
+        return True
+    
+    # If the database exists connect and check tables
+    conn = sqlite3.connect(file)
+    cur = conn.cursor()
+
+    # Check if specific tables are missing
+    for playlist in playlist_array:
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (playlist[0],))
+        if(not cur.fetchone()):
+            tables.append([
+                f"""
+                CREATE TABLE IF NOT EXISTS {playlist[0]} (
+                song_table_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                spotify_ID TEXT,
+                sender_ID INTEGER,
+                timestamp TEXT,
+                discord_message_id TEXT
+                )
+                """,
+                f"""
+                CREATE TABLE IF NOT EXISTS {playlist[0]}_duration_milestones (
+                playlist_id TEXT,
+                milestone INTEGER,
+                reached_at DATETIME,
+                PRIMARY KEY (playlist_id, milestone)
+                )
+                """,
+                playlist[0]])
+    
+    # Flag for creation of tables
+    tables_flag = False
+
+    # If any tables are indentified as missing
+    if(tables):
+        tables_flag = True
+
+        print(f"{pgrm_signature}: tables created for playlists: ", end='')
+        for table in tables:
+            # Create playlist table
+            cur.execute(table[0])
+
+            # Create duration table
+            cur.execute(table[1])
+
+            # Print out names of tables created
+            print(f" {playlist[0]}", end='')
+
+        # Commit the changes
+        conn.commit()
+        conn.close()
+
+    print()
+
+    # Returns true if any tables are updated, false if not
+    return tables_flag
+        
+
     
 # Get the message sender data
 def getSender(msg):

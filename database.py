@@ -18,10 +18,10 @@ with open("setup.json", 'r') as setupf:
     TOKEN = (data['discord_token'])
     client_id = (data['client_id'])
     client_secret = (data['client_secret'])
-    playlist_link = (data['playlist_link'])
+    # playlist_link = (data['playlist_link'])
     grab_past_flag = (data['grab_past_flag'])
     leaderboards_flag = (data['leaderboards_flag'])
-    discord_channel = (data['discord_channel'])
+    # discord_channel = (data['discord_channel'])
 
 # Connect to or create SQLite Database
 conn = sqlite3.connect('spotbot.db') # create or connect to the database

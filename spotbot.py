@@ -11,6 +11,7 @@ import calendar
 import achievements
 import aiohttp
 import io
+import database_tools
 
 pgrm_signature = "spotbot.py: "
 
@@ -335,7 +336,7 @@ async def on_message(msg):
                         rEmoji = "🔁" 
 
                         # Check to see if the song is duplicate, if not add it to the DB
-                        test = dupCheck(msg)
+                        test = dupCheck(msg, playlist_link)
 
                         #Decides what emoji to add based on if it is a duplicate or not
                         if(test == True):
@@ -353,7 +354,7 @@ async def on_message(msg):
                             conn = sqlite3.connect('spotbot.db')
                             cur = conn.cursor()
 
-                            cur.execute("SELECT COUNT(*) FROM songs")
+                            cur.execute("SELECT COUNT(*) FROM songs WHERE playlist_ID = ?", (getPlaylistID(playlist_link),))
                             songs = cur.fetchone()[0]
 
                             # Every 10 songs check for achievements (For perfromance)
@@ -364,8 +365,6 @@ async def on_message(msg):
                                 # Get duration achievement (if any)
                                 duration = achievements.checkDurationAchievement(playlist_update.get_playlist_duration(playlist_link))
 
-                            # duration = get_playlist_duration(playlist_link.split('/')[-1].split('?')[0])
-                            # print(f"{pgrm_signature}: DEBUG: duration of playlist in hours {duration}")
 
                             conn.close()
 
@@ -413,7 +412,7 @@ async def waves(ctx, arg):
 
 
 #checks for duplicates before sending songs off to uri.txt and recording in database
-def dupCheck(msg):
+def dupCheck(msg, playlist_link):
     string1 = msg.content
     
     # opening a text files (new)
@@ -429,8 +428,9 @@ def dupCheck(msg):
 
     # Attempt to select spotify_ID
     # input sanitization - https://realpython.com/prevent-python-sql-injection/
-    #cur.execute("SELECT spotify_ID FROM songs WHERE spotify_ID = ?'," (stripped, )) # sanitized input?
-    cur.execute("SELECT spotify_ID FROM songs WHERE spotify_ID = ?", (stripped,))
+    # Check if there is a song id in the specified playlist
+    playlist_ID = getPlaylistID(playlist_link)
+    cur.execute("SELECT spotify_ID FROM songs WHERE spotify_ID = ? AND playlist_ID = ?", (stripped,playlist_ID,))
     matches = cur.fetchone()
 
     # If a match is found
@@ -442,8 +442,8 @@ def dupCheck(msg):
         print(pgrm_signature + 'String', string1 , 'Not Found')
 
         # Add the song ID into the database
-        cur.execute("INSERT INTO songs (spotify_ID, sender_ID, timestamp, discord_message_id) VALUES (?, ?, ?, ?)", 
-                    (stripped, getSender(msg), getTimestamp(msg), getMessageID(msg)))
+        cur.execute("INSERT INTO songs (spotify_ID, playlist_ID, sender_ID, timestamp, discord_message_id) VALUES (?, ?, ?, ?)", 
+                    (stripped, playlist_ID, getSender(msg), getTimestamp(msg), getMessageID(msg)))
         conn.commit()
 
     # Add to the uri.txt file to be sent off
@@ -564,7 +564,11 @@ def getMessageID(msg):
     # return the sender ID to be used in dupCheck to be recorded in the songs playlist
     return message_id
 
+def getPlaylistID(playlist_link):
+    # Return the playlist ID
+    return playlist_link.split('/')[-1].split('?')[0]
+
 # Initialize the database if not created yet
-initialize_database("spotbot.db")
+database_tools.initialize_database("spotbot.db")
 
 bot.run(TOKEN)

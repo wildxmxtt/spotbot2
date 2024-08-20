@@ -15,9 +15,6 @@ def checkDurationAchievement(length):
             WHERE milestone = ? AND reached_at IS NULL''',
             (int(length),))
         milestone = cur.fetchone()
-
-        print(f"{pgrm_signature} DEBUG: Milestone info: {milestone}")
-
         
         if milestone:
             cur.execute('''UPDATE playlist_duration_milestones

@@ -74,7 +74,9 @@ def initialize_database(file):
         playlist_ID = playlist[1].split('/')[-1].split('?')[0] # Extract playlit ID
 
         # If the playlist ID is in the database return false
-        entries = cur.execute('SELECT playlist_id from playlist_duration_milestones WHERE playlist_id = ?', (playlist_ID, ))
+        cur.execute('SELECT playlist_id from playlist_duration_milestones WHERE playlist_id = ?', (playlist_ID, ))
+        entries = cur.fetchone()
+
         if entries:
             conn.close()
             return True

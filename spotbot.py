@@ -280,35 +280,44 @@ async def sendLeaderBoardEmbed(ctx, results, title):
 @bot.command()
 async def grabPast(ctx):
     with open("setup.json", 'r') as setupf: #must reopen the file to check if flag has been updated
-        data = json.load(setupf)
-        grab_past_flag = (data['grab_past_flag']) 
+                    data = json.load(setupf)
+                    grab_past_flag = (data['grab_past_flag'])
 
-    # Grab past is intended to be called once, this is a catch to not re-compute old messages that
-    #   have already been recorded
-    if(grab_past_flag) == 1: 
+    client = discord.Client(intents=intents)
+
+    if(grab_past_flag) == 1:
         await ctx.reply("grabPast has already been called. If this is a mistake please go to the setup.json file and set grab_past_flag to 0")
     else:
-        word = "https://open.spotify.com/track"
-        await ctx.reply("Grabbing songs now please wait until FINISHED is sent")
+        # Loop through available playlists
+        for playlist in playlist_array:
+            # Loop through each playlists specified channels
+            for channel in playlist[2]:
+                # Get the channel object
+                channel_object = client.get_channel(channel)
 
-        # Grab messages from the channel
-        messages = [messages async for messages in ctx.channel.history(limit=500000)] #If your bot is not reading all of your messages this number may have to be heigher
-        await ctx.send("Grabbing & Flitering Past Messages (this could take a while).....")
+                word = "https://open.spotify.com/track"
+                await ctx.reply("Grabbing songs now please wait until FINISHED is sent")
 
-        # to make it work with only one file, surprisingly all the SQL is handled in dupCheck()
-        # Loop through each message
-        for msg in messages:
-            if word in msg.content: # Only spotifiy links
-                dupCheck(msg)# send off the link and check to see if it is a duplicate
-                # If the song is not a duplicate
-                    
+                # Grab messages from the channel
+                messages = [messages async for messages in channel_object.history(limit=500000)] #If your bot is not reading all of your messages this number may have to be heigher
+                await ctx.send("Grabbing & Flitering Past Messages (this could take a while).....")
+
+                # to make it work with only one file, surprisingly all the SQL is handled in dupCheck()
+                # Loop through each message
+                for msg in messages:
+                    if word in msg.content: # Only spotifiy links
+                        dupCheck(msg, playlist[1])# send off the link and check to see if it is a duplicate
+                        # If the song is not a duplicate
+                            
+                
+                # send off the spotifyIDs file to be uploaded to Spotify
+                print(pgrm_signature + playlist_update.sendOff(playlist[1]))
         
-         # send off the spotifyIDs file to be uploaded to Spotify
-        print(pgrm_signature + playlist_update.sendOff())
+        # send a success after the loop
         await ctx.send("Messages Grabbed, Process Complete, FINISHED" + "\n Here is the Spotify Link: " + playlist_link)
         
         update_gp_flag()
-        print("Updated the grabpast flag")
+        print(f"{pgrm_signature}: Updated the grabpast flag")
         
 
 
@@ -317,7 +326,7 @@ async def on_message(msg):
     # Loop through available playlists
     for playlist in playlist_array:
 
-        # Loop through eache playlists specified channels
+        # Loop through each playlists specified channels
         for channel in playlist[2]:
 
             # If the link is sent into the chat specified

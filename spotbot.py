@@ -374,15 +374,13 @@ async def on_message(msg):
                                 # Get duration achievement (if any)
                                 duration = achievements.checkDurationAchievement(playlist_update.get_playlist_duration(playlist_link))
 
-
+                                # If there is a celebration, send the message
+                                if(celebration):
+                                    await msg.channel.send(celebration)
+                                if(duration):
+                                    await msg.channel.send(duration)
+                            
                             conn.close()
-
-                            # If there is a celebration, send the message
-                            if(celebration):
-                                await msg.channel.send(celebration)
-                            if(duration):
-                                await msg.channel.send(duration)
-
 
                 else:
                     # Print to the terminal that a message was recieved but it is NOT a spotify link
@@ -451,7 +449,7 @@ def dupCheck(msg, playlist_link):
         print(pgrm_signature + 'String', string1 , 'Not Found')
 
         # Add the song ID into the database
-        cur.execute("INSERT INTO songs (spotify_ID, playlist_ID, sender_ID, timestamp, discord_message_id) VALUES (?, ?, ?, ?)", 
+        cur.execute("INSERT INTO songs (spotify_ID, playlist_ID, sender_ID, timestamp, discord_message_id) VALUES (?, ?, ?, ?, ?)", 
                     (stripped, playlist_ID, getSender(msg), getTimestamp(msg), getMessageID(msg)))
         conn.commit()
 

@@ -17,12 +17,24 @@ app.config['SESSION_COOKIE_NAME'] = 'Matts_Cookie'
 #token_info = ""
 TOKEN_INFO = "token_info"
 
+playlist_array = []
+
 #gets info from setup file
 with open('setup.json', 'r') as setupf:
     data = json.load(setupf)
     client_id = (data['client_id'])
     client_secret = (data['client_secret'])
-    playlist_link = (data['playlist_link'])
+    playlists = (data['playlists'])
+
+    for playlist in playlists:
+        # Extract playlist attributes
+        playlist_name = playlist['playlist_name']
+        playlist_link = playlist['playlist_link']
+        discord_channel = playlist['discord_channel']
+        
+        # Add to playlist array
+        playlist_array.append([playlist_name, playlist_link, discord_channel])
+
 
 #do this function above twice
 
@@ -58,8 +70,11 @@ def getTracks():
     #USING THE OAuth TOKEN
     sp = spotipy.Spotify(auth=token_info['access_token'])
 
-    fline = playlist_link.replace("https://open.spotify.com/playlist/", "")#deletes first part of the link
+    # Using the first playlist from JSON to get the link
+    first_playlist = playlist_array[0]
+    fline = first_playlist[1].replace("https://open.spotify.com/playlist/", "")#deletes first part of the link
     PLAYLISTID = (fline.split("?si")[0]) #cuts off exess info from the link
+    print(PLAYLISTID)
 
     print("SPOTIFY REQUEST WENT THROUGH!!!! ")
     

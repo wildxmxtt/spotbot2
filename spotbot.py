@@ -299,13 +299,7 @@ async def grabPast(ctx):
                     print(f"Channel with ID {channel} not found.")
                     continue
 
-                try:
-                    # Get the history
-                    history = await channel_object.history(limit=500000)
-                except discord.errors.Forbidden:
-                    print(f"Bot Does't have permission to read message history in channel {channel}")
-                except Exception as e:
-                    print(f"An error occurred while fetching history for channel {channel}: {e}")
+                history = fetch_message_history(channel)
 
                 word = "https://open.spotify.com/track"
                 await ctx.reply("Grabbing songs now please wait until FINISHED is sent")
@@ -428,6 +422,32 @@ async def waves(ctx, arg):
         # Catching unexpected errors
         except Exception as err:
             print(pgrm_signature + "Error occurred -> %s" % err)
+
+async def fetch_message_history(channel_ID):
+    channel = bot.get_channel(channel_ID)
+    if channel is None:
+        print(f"Channel with ID {channel} not found.")
+        try:
+            channel = await bot.fetch_channel(channel_ID)
+        except discord.errors.NotFound:
+            print(f"Channel with ID {channel_ID} does not exist.")
+        except discord.errors.Forbidden:
+            print(f"Bot does not hav epermission to acces channel{channel_ID}")
+    
+    print(f"Channel found: {channel.name} (ID: {channel_ID}, Type: {type(channel)})")
+
+    if not isinstance(channel, discord.TextChannel):
+        print(f"Channel {channel_ID} is not a text channel.")
+    
+    try:
+        messages = [message async for message in channel.history(limit=500000)]
+        print(f"Successfully fetched {len(messages)} messages from channel {channel.id}")
+    except discord.errors.Forbidden:
+        print(f"Bot doesn't have permission to read message history in channel {channel.id}")
+    except Exception as e:
+        print(f"An error occurred while fetching history for channel {channel.id}: {e}")
+
+    return messages
 
 
 #checks for duplicates before sending songs off to uri.txt and recording in database

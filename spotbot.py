@@ -294,13 +294,24 @@ async def grabPast(ctx):
             # Loop through each playlists specified channels
             for channel in playlist[2]:
                 # Get the channel object
-                channel_object = client.get_channel(channel)
+                channel_object = client.get_channel(int(channel))
+                if channel is None:
+                    print(f"Channel with ID {channel} not found.")
+                    continue
+
+                try:
+                    # Get the history
+                    history = await channel_object.history(limit=500000)
+                except discord.errors.Forbidden:
+                    print(f"Bot Does't have permission to read message history in channel {channel}")
+                except Exception as e:
+                    print(f"An error occurred while fetching history for channel {channel}: {e}")
 
                 word = "https://open.spotify.com/track"
                 await ctx.reply("Grabbing songs now please wait until FINISHED is sent")
 
                 # Grab messages from the channel
-                messages = [messages async for messages in channel_object.history(limit=500000)] #If your bot is not reading all of your messages this number may have to be heigher
+                messages = [messages async for messages in history] #If your bot is not reading all of your messages this number may have to be heigher
                 await ctx.send("Grabbing & Flitering Past Messages (this could take a while).....")
 
                 # to make it work with only one file, surprisingly all the SQL is handled in dupCheck()

@@ -8,6 +8,7 @@
             alert(message);
         }
     </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <h1>Advanced Setup</h1>
@@ -50,6 +51,7 @@
                 {{ feature }}
             </label><br>
         {% endfor %}
+        
         
         <br>
         <button type="submit">Save/Update</button>

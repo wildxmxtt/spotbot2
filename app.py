@@ -80,7 +80,7 @@ def close_app():
 
 @app.route('/continue_setup', methods=['POST'])
 def continue_setup():
-    return render_template('setup.html')
+    return render_template('setup.html', installed_features=data['installed_features'])
 
 @app.route('/advanced_setup', methods=['GET', 'POST'])
 def advanced_setup():
@@ -91,8 +91,14 @@ def advanced_setup():
         data['playlist_links'] = request.form['playlist_links']
         data['discord_channels'] = request.form['discord_channels']
         
+        # Update features based on checkboxes
+        for feature in data['installed_features']:
+            data['installed_features'][feature] = feature in request.form.getlist('features')
+        
+        # Save the updated configuration to setup.json
         with open('setup.json', 'w') as setupf:
             json.dump(data, setupf)
+        
         flash('Setup file updated!')
         return redirect(url_for('advanced_setup'))
     
@@ -102,10 +108,16 @@ def advanced_setup():
 def save_setup():
     client_id = request.form['client_id']
     client_secret = request.form['client_secret']
-    
+    discord_token = request.form['discord_token']
+    playlist_links = request.form['playlist_links']
+    discord_channels = request.form['discord_channels']
+
     data['client_id'] = client_id
     data['client_secret'] = client_secret
-    
+    data['discord_token'] = discord_token 
+    data['playlist_links'] = playlist_links
+    data['discord_channels'] = discord_channels
+
     with open('setup.json', 'w') as setupf:
         json.dump(data, setupf)
     

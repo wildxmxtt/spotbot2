@@ -1,8 +1,10 @@
-{
-    "client_id": "",
-    "client_secret": "",
-    "discord_token": "",
-    "playlist_link": "",
-    "discord_channel": 8,
-    "grab_past_flag": 1
-}
+{"client_id": "a", 
+"client_secret": "a", 
+"discord_token": "a",
+ "playlist_link": "https://open.spotify.com/playlist/59lDosA2UdRCI5kWMQa3S2?si=fed0e47a906d4479&pt=f09471c7cebe359d3630d4cfc48940c9", 
+ "discord_channel": "1245481341693464808", 
+ "grab_past_flag": 1, 
+ "installed_features": 
+ {"database": false, "leaderboard": false, "item 3": true, "item 4": false}, 
+ "playlist_links": "a",
+"discord_channels": "a"}

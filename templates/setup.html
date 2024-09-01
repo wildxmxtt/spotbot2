@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Spotify Playlist Info</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
 </head>
 <body>
     <h1>Continued Setup</h1>
@@ -21,12 +23,13 @@
     <form action="{{ url_for('advanced_setup') }}" method="get">
         <button type="submit">Advanced Setup Page</button>
     </form>
-    <p>#1: Spotify Setup </p>
-    <ul>Please go to: <a href="https://developer.spotify.com/dashboard">Spotify Developer Webpage</a></ul>
-    <ul>You need to click login at the top right hand corner of the page </ul>
-    <ul>After logging in with your Spotify account, you want to select create app</ul>
-    <ul>Once your app has been created you need to give it:</ul>
-    <ol>
+    <form action="{{ url_for('advanced_setup') }}" method="post">
+        <p>#1: Spotify Setup </p>
+        <ul>Please go to: <a href="https://developer.spotify.com/dashboard">Spotify Developer Webpage</a></ul>
+        <ul>You need to click login at the top right hand corner of the page </ul>
+        <ul>After logging in with your Spotify account, you want to select create app</ul>
+        <ul>Once your app has been created you need to give it:</ul>
+        <ol>
         <li>App Name</li>
         <li>App Description</li>
         <li>Redirect URI's</li>
@@ -52,9 +55,57 @@
         <ul>Login with your discord credentials</ul>
         <ul>After logging in with your Discord account, you want to be on the applications tab</ul>
         <ul>On the applications tab you want to select the New Application button</ul>
+        <ul>Give the bot a name</ul>
+        <ul>Create the application</ul>
+        <ul>Click on the installation tab</ul>
+        <ul>Un-select User Install</ul>
+        <ul>Select Discord Provided Link</ul>
+        <ul>For the SCOPES Please Select:</ul>
+        <li>Add Reactions</li>
+        <li>Connect</li>
+        <li>Read Message History</li>
+        <li>Send Messages</li>
+        <li>Send Messages in Threads</li>
+        <li>Use Embeded Activies</li>
+        <li>Use External Emojis</li>
+        <li>Use External Stickers</li>
+        <li>Use Slash Commands</li>
+        <li>View Audit Logs</li>
+        <li>View Channels</li>
+        <li>View Server Insights</li>
+        <ul>Go to the Bot tab</ul>
+        <li>Turn on the Public Bot</li>
+        <li>Turn on Persence Intent</li>
+        <li>Turn on Server Memebers Intent</li>
+        <li>Turn on Message Content Intent</li>
+        <li>Press reset access token and paste that access token in here:</li>
+
+        <input type="text" id="discord_token" name="discord_token" required><br><br>
+
+        <ul></ul>
+
         
+        <h3>Customize your Spotbot Install</h3>
+        <p>Select features to install:</p>
+        {% for feature, installed in installed_features.items() %}
+
+            <label>
+                <input type="checkbox" name="features" value="{{ feature }}"
+                       {% if installed %}checked{% endif %}>
+                {{ feature }}
+            </label><br>
+        {% endfor %}
+
+        <li>Press Place your Spotify Links that you want spotbot to view (comma-separated):</li>
+        <input type="text" id="playlist_links" name="playlist_links" required><br><br>
+
+        <li>Go to your discord settings and turn on developer mode in advanced</li>
+        <li>Then grab your channel ID's you want spotbot to view by right clicking on the channel then getting the ID</li>
+        <li>Press Place your Discord Channels that you want spotbot to view (comma-separated):</li>
+        <input type="text" id="discord_channels" name="discord_channels" value="{{ discord_channels }}" required><br><br>
 
         <button type="submit">Save</button>
+        </form>
     </ol>
 </body>
 </html>

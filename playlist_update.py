@@ -130,7 +130,7 @@ def get_spotify_api_object(now, data, TOKEN, refresh_token, expires_at):
     time_left = expires_at - now #finds out how much time is left on the token
 
     print(pgrm_signature + "the time left on orginial token is: "+ str(time_left / 60) + "min")
-    if(True): #if token is expried, get a new token with the refresh token
+    if(is_expried): #if token is expried, get a new token with the refresh token
         sp = spotipy.Spotify(auth=refresh_the_token(data, TOKEN, refresh_token))#Refreshes the token from now on after 
         
         # Now we must update the time that the token expires at
@@ -148,3 +148,11 @@ def get_spotify_api_object(now, data, TOKEN, refresh_token, expires_at):
         sp = spotipy.Spotify(auth=TOKEN) #creates object that interacts with spotify api; uses the first token generated; token only last 1 hour
 
     return sp
+
+# Token refresh method for startup
+def startup_token_refresh():
+    # Get old token information
+    data, TOKEN, refresh_token, expires_at = get_spotify_json()
+    
+    # Refresh using the token info
+    refresh_the_token(data, TOKEN, refresh_token)

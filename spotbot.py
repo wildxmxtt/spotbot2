@@ -289,38 +289,26 @@ async def grabPast(ctx):
     if(grab_past_flag) == 1:
         await ctx.reply("grabPast has already been called. If this is a mistake please go to the setup.json file and set grab_past_flag to 0")
     else:
+        # Alert the user
+        await ctx.reply("Grabbing songs now please wait until FINISHED is sent")                
+        await ctx.send("Grabbing & Flitering Past Messages (this could take a while).....")
+        
         # Loop through available playlists
         for playlist in playlist_array:
             # Loop through each playlists specified channels
             for channel in playlist[2]:
-                # Get the channel object
-                channel_object = client.get_channel(int(channel))
-                if channel is None:
-                    print(f"Channel with ID {channel} not found.")
-                    continue
-
-                messages = await fetch_message_history(channel)
-
-                word = "https://open.spotify.com/track"
-                await ctx.reply("Grabbing songs now please wait until FINISHED is sent")
-
-                # Grab messages from the channel
-                # messages = await [messages async for messages in history] #If your bot is not reading all of your messages this number may have to be heigher
-                
-                await ctx.send("Grabbing & Flitering Past Messages (this could take a while).....")
-
-                # to make it work with only one file, surprisingly all the SQL is handled in dupCheck()
-                # Loop through each message
-
                 # Clear the uri.txt file
                 file1 = open("uri.txt", "w+")
                 file1.close()
 
+                # Get messages from each channel 
+                messages = await fetch_message_history(channel)
+
+                # Loop through messages that contain spotify links
+                word = "https://open.spotify.com/track"
                 for msg in messages:
                     if word in msg.content: # Only spotifiy links
-                        dupCheck(msg, playlist[1])# send off the link and check to see if it is a duplicate
-                        # If the song is not a duplicate
-                            
+                        dupCheck(msg, playlist[1])# send off the link and check to see if it is a duplicate                            
                 
                 # send off the spotifyIDs file to be uploaded to Spotify
                 print(pgrm_signature + "Uri text file written to succesfully!\n")
@@ -612,5 +600,8 @@ def getPlaylistID(playlist_link):
 
 # Initialize the database if not created yet
 database_tools.initialize_database("spotbot.db")
+
+# Refresh the token upon startup
+playlist_update.startup_token_refresh()
 
 bot.run(TOKEN)

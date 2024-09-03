@@ -58,7 +58,7 @@ async def hlp(ctx):
         "[!]r (gives the user a random song from the playlist!) \n" +
         "[!]waves (generate Spotify's wave codes png image files.)\n")
 
-    if leaderboards_flag == 1:
+    if int(leaderboards_flag) == 1:
         helpText += ("[!]leaderboard (gives a leadearboard of all time highest contributing users) \n" +
             "[!]thismonth (gives a leaderboard of this months hightst contributing users) \n" +
             "[!]reactchamp (gives a leaderboard of this months most reacted contributed songs) \n")
@@ -299,17 +299,23 @@ async def grabPast(ctx):
                     print(f"Channel with ID {channel} not found.")
                     continue
 
-                history = fetch_message_history(channel)
+                messages = await fetch_message_history(channel)
 
                 word = "https://open.spotify.com/track"
                 await ctx.reply("Grabbing songs now please wait until FINISHED is sent")
 
                 # Grab messages from the channel
-                messages = [messages async for messages in history] #If your bot is not reading all of your messages this number may have to be heigher
+                # messages = await [messages async for messages in history] #If your bot is not reading all of your messages this number may have to be heigher
+                
                 await ctx.send("Grabbing & Flitering Past Messages (this could take a while).....")
 
                 # to make it work with only one file, surprisingly all the SQL is handled in dupCheck()
                 # Loop through each message
+
+                # Clear the uri.txt file
+                file1 = open("uri.txt", "w+")
+                file1.close()
+
                 for msg in messages:
                     if word in msg.content: # Only spotifiy links
                         dupCheck(msg, playlist[1])# send off the link and check to see if it is a duplicate
@@ -317,6 +323,8 @@ async def grabPast(ctx):
                             
                 
                 # send off the spotifyIDs file to be uploaded to Spotify
+                print(pgrm_signature + "Uri text file written to succesfully!\n")
+                print(pgrm_signature + "Sending songs off to spotify")
                 print(pgrm_signature + playlist_update.sendOff(playlist[1]))
         
         # send a success after the loop
@@ -516,7 +524,7 @@ def uritxt(link):
         rline = cur.fetchall() # retreive all spotify IDs and store in readlines
 
         # Prepare to write the spotify IDs to the uri.txt file
-        file1 = open("uri.txt", "w+")
+        file1 = open("uri.txt", "a")
     
         # Loop through each spotify ID
         for line in rline:
@@ -547,11 +555,6 @@ def uritxt(link):
         print(f"These have been written to the uri.txt file")
 
         file1.close()
-
-        print(pgrm_signature + "Uri text file written to succesfully!\n")
-        print(pgrm_signature + "Sending songs off to spotify")
-
-
     
 def update_gp_flag(): 
  ###Update grab_past_flag#####

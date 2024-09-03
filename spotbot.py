@@ -15,6 +15,8 @@ import database_tools
 
 pgrm_signature = "spotbot.py: "
 
+
+
 playlist_array = []
 
 with open("setup.json", 'r') as setupf:

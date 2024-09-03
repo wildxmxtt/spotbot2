@@ -91,3 +91,17 @@ def initialize_database(file):
             conn.commit()
             conn.close()
             return True
+        
+def get_setup_info(file):
+    # Connect to database
+    conn = sqlite3.connect(file)
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM setup")
+
+    return cur.fetchone()
+        
+
+get_setup_info('secrets.db')
+
+# def get_playlists(file):

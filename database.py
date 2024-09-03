@@ -25,6 +25,7 @@ with open("setup.json", 'r') as setupf:
 
 # Connect to or create SQLite Database
 conn = sqlite3.connect('spotbot.db') # create or connect to the database
+conn2 = sqlite3.connect('secrets.db') # create or connect to the database
 
 # Create a cursor
 cur = conn.cursor()

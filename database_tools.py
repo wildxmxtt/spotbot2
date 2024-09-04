@@ -4,27 +4,8 @@ import sqlite3
 
 pgrm_signature = "database_tools.py"
 
-playlist_array = []
 
-with open("setup.json", 'r') as setupf:
-    data = json.load(setupf)
-    TOKEN = (data['discord_token'])
-    client_id = (data['client_id'])
-    client_secret = (data['client_secret'])
-    playlists = (data['playlists'])
-    grab_past_flag = (data['grab_past_flag'])
-    leaderboards_flag = (data['leaderboards_flag'])
-
-    for playlist in playlists:
-        # Extract playlist attributes
-        playlist_name = playlist['playlist_name']
-        playlist_link = playlist['playlist_link']
-        discord_channel = playlist['discord_channel']
-        
-        # Add to playlist array
-        playlist_array.append([playlist_name, playlist_link, discord_channel])
-
-def initialize_database(file):
+def initialize_database(file, playlist_array):
     # Check to see if the database file already exists
     db_exists = path.exists(file)
 
@@ -92,16 +73,30 @@ def initialize_database(file):
             conn.close()
             return True
         
-def get_setup_info(file):
+def get_setup_info(file, server_name):
     # Connect to database
     conn = sqlite3.connect(file)
     cur = conn.cursor()
 
-    cur.execute("SELECT * FROM setup")
+    # Get server setup info for the server
+    cur.execute("SELECT * FROM setup WHERE server_name = ?", (server_name,))
 
+    # Return information
     return cur.fetchone()
         
+def get_playlist_array(file, server_name):
+    conn = sqlite3.connect(file)
+    cur = conn.cursor()
 
-get_setup_info('secrets.db')
+    cur.execute("SELECT playlist_link,discord_channel FROM chats WHERE server_name = ?", (server_name,))
 
-# def get_playlists(file):
+    sql_results = cur.fetchall()
+
+    playlist_array = []
+
+    playlist_array.append(sql_results[0])
+    for playlist_set in sql_results:
+        
+
+
+get_playlist_array("secrets.db", "YGH")

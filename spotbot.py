@@ -15,27 +15,15 @@ import database_tools
 
 pgrm_signature = "spotbot.py: "
 
+# Get any discord token in the DB
+conn = sqlite3.connect('secrets.db')
+cur = conn.cursor()
 
+cur.execute('SELECT discord_token FROM setup')
 
-playlist_array = []
+TOKEN = cur.fetchone()
 
-with open("setup.json", 'r') as setupf:
-    data = json.load(setupf)
-    TOKEN = (data['discord_token'])
-    client_id = (data['client_id'])
-    client_secret = (data['client_secret'])
-    playlists = (data['playlists'])
-    grab_past_flag = (data['grab_past_flag'])
-    leaderboards_flag = (data['leaderboards_flag'])
-
-    for playlist in playlists:
-        # Extract playlist attributes
-        playlist_name = playlist['playlist_name']
-        playlist_link = playlist['playlist_link']
-        discord_channel = playlist['discord_channel']
-        
-        # Add to playlist array
-        playlist_array.append([playlist_name, playlist_link, discord_channel])
+conn.close()
 
 
 intents = discord.Intents.all()
@@ -54,13 +42,15 @@ async def on_ready():
 #This is the help command that lets the user know all of the avaliable commands that can be used 
 @bot.command()
 async def hlp(ctx):
+    setup_info = database_tools.get_setup_info('secrets.db', ctx.message.guild.name)
+
     helpText = ("The commands for this bot go as follows: \n" + 
         "[!]sLink (gives the user the link to the spotify playlist) \n" + 
         "[!]grabPast (allows for the user to grab past songs sent in a chat, this can only be ran once) \n" +
         "[!]r (gives the user a random song from the playlist!) \n" +
         "[!]waves (generate Spotify's wave codes png image files.)\n")
 
-    if int(leaderboards_flag) == 1:
+    if int(setup_info[4]) == 1:
         helpText += ("[!]leaderboard (gives a leadearboard of all time highest contributing users) \n" +
             "[!]thismonth (gives a leaderboard of this months hightst contributing users) \n" +
             "[!]reactchamp (gives a leaderboard of this months most reacted contributed songs) \n")
@@ -72,7 +62,11 @@ async def hlp(ctx):
 #gives the link set in the setup.json file
 @bot.command()
 async def sLink(ctx):
-     await ctx.reply(playlist_link)
+    playlist_array = database_tools.get_playlist_array('secrets.db', ctx.message.guild.name)
+    
+    for playlist in playlist_array:
+        if int(playlist[1]) == ctx.channel.id:
+            await ctx.reply(playlist[0])
 
 #a request command to give the user back a random song from the playlist 
 @bot.command()
@@ -107,8 +101,10 @@ async def r(ctx):
 # a request command to produce an all time leaderboard stats for the respective discord server 
 @bot.command()
 async def leaderboard(ctx):
+    setup_info = database_tools.get_setup_info('secrets.db', ctx.message.guild.name)
+
     # Check if the leaderboard information is enabled via setup.json
-    if leaderboards_flag == 0: return False
+    if setup_info[5] == 0: return False
 
     # Connect to the SQLite Database
     conn = sqlite3.connect('spotbot.db')
@@ -135,8 +131,10 @@ async def leaderboard(ctx):
 # a request command to produce a leaderboard with this months stats for the respective discord server
 @bot.command()
 async def thismonth(ctx):
+    setup_info = database_tools.get_setup_info('secrets.db', ctx.message.guild.name)
+    
     # Check if the leaderboard information is enabled via setup.json
-    if leaderboards_flag == 0: return False
+    if setup_info[4] == 0: return False
 
     # Connect to the SQLite Database
     conn = sqlite3.connect('spotbot.db')
@@ -170,8 +168,11 @@ async def thismonth(ctx):
 # A request that produces a leaderboard with this months highest reacted songs
 @bot.command()
 async def reactChamp(ctx):
+    # Get set up info and playlists
+    setup_info = database_tools.get_setup_info('secrets.db', ctx.message.guild.name)
+
     # Check if the leaderboard information is enabled via setup.json
-    if leaderboards_flag == 0: return False
+    if setup_info[4] == 0: return False
 
     # warn user this may take a while
     await ctx.send(f"Grabbing messages - this may take a while...")
@@ -215,7 +216,7 @@ async def reactChamp(ctx):
 
     # make and send the embed
     title = f"Reaction Champions for {calendar.month_name[current_month]}"
-    embed = discord.Embed(title=title, color=0x1DB954, url=playlist_link)
+    embed = discord.Embed(title=title, color=0x1DB954)
     embed.description = "The top 5 highest reacted songs this month"
 
     loops = 1
@@ -259,7 +260,7 @@ async def sendLeaderBoardEmbed(ctx, results, title):
             usernames[userID] = "Unknown User"
 
     # Create the embed
-    embed = discord.Embed(title=title, color=0x1DB954, url=playlist_link)
+    embed = discord.Embed(title=title, color=0x1DB954)
     embed.description = "The top 10 users who have sent the most songs:"
 
     loops = 1
@@ -294,31 +295,32 @@ async def grabPast(ctx):
         # Alert the user
         await ctx.reply("Grabbing songs now please wait until FINISHED is sent")                
         await ctx.send("Grabbing & Flitering Past Messages (this could take a while).....")
-        
+
+        playlist_array = database_tools.get_playlist_array('secrets.db', ctx.message.guild.name)
+        # 0 index is URL, 1 index is discord channelID
+
         # Loop through available playlists
         for playlist in playlist_array:
-            # Loop through each playlists specified channels
-            for channel in playlist[2]:
-                # Clear the uri.txt file
-                file1 = open("uri.txt", "w+")
-                file1.close()
+            # Clear the uri.txt file
+            file1 = open("uri.txt", "w+")
+            file1.close()
 
-                # Get messages from each channel 
-                messages = await fetch_message_history(channel)
+            # Get messages from each channel 
+            messages = await fetch_message_history(playlist[1])
 
-                # Loop through messages that contain spotify links
-                word = "https://open.spotify.com/track"
-                for msg in messages:
-                    if word in msg.content: # Only spotifiy links
-                        dupCheck(msg, playlist[1])# send off the link and check to see if it is a duplicate                            
-                
-                # send off the spotifyIDs file to be uploaded to Spotify
-                print(pgrm_signature + "Uri text file written to succesfully!\n")
-                print(pgrm_signature + "Sending songs off to spotify")
-                print(pgrm_signature + playlist_update.sendOff(playlist[1]))
-        
+            # Loop through messages that contain spotify links
+            word = "https://open.spotify.com/track"
+            for msg in messages:
+                if word in msg.content: # Only spotifiy links
+                    dupCheck(msg, playlist[0])# send off the link and check to see if it is a duplicate                            
+            
+            # send off the spotifyIDs file to be uploaded to Spotify
+            print(pgrm_signature + "Uri text file written to succesfully!\n")
+            print(pgrm_signature + "Sending songs off to spotify")
+            print(pgrm_signature + playlist_update.sendOff(playlist[0]))
+    
         # send a success after the loop
-        await ctx.send("Messages Grabbed, Process Complete, FINISHED" + "\n Here is the Spotify Link: " + playlist_link)
+        await ctx.send("Messages Grabbed, Process Complete, FINISHED" + "\n Here is the Spotify Link: " + playlist[0])
         
         update_gp_flag()
         print(f"{pgrm_signature}: Updated the grabpast flag")
@@ -327,99 +329,105 @@ async def grabPast(ctx):
 
 @bot.event
 async def on_message(msg):
+    # Get the set up info and playlist array
+    setup_info = database_tools.get_setup_info('secrets.db', msg.guild.name)
+    playlist_array = database_tools.get_playlist_array('secrets.db', msg.guild.name)
+    
+
     # Loop through available playlists
     for playlist in playlist_array:
+    
+        # If the link is sent into the chat specified
+        if msg.channel.id == int(playlist[1]):
+            # Record playlist link
+            playlist_link = playlist[0]
 
-        # Loop through each playlists specified channels
-        for channel in playlist[2]:
+            #once again, all the file work can be moved over to the dupCheck() function for single file handling
+            strCheck = "https://open.spotify.com/track"
 
-            # If the link is sent into the chat specified
-            if msg.channel.id == channel:
-                # Record playlist link
-                playlist_link = playlist[1]
+            if re.search(strCheck, msg.content):
+                if not "The random song you got was:" in str(msg.content): # Without this it would catch all songs comand as a new link for some reason.
+                    print(pgrm_signature + "Valid Spotify Link")
 
-                #once again, all the file work can be moved over to the dupCheck() function for single file handling
-                strCheck = "https://open.spotify.com/track"
+                    checkEmoji = "☑️"
+                    rEmoji = "🔁" 
 
-                if re.search(strCheck, msg.content):
-                    if not "The random song you got was:" in str(msg.content): # Without this it would catch all songs comand as a new link for some reason.
-                        print(pgrm_signature + "Valid Spotify Link")
+                    # Check to see if the song is duplicate, if not add it to the DB
+                    test = dupCheck(msg, playlist_link)
 
-                        checkEmoji = "☑️"
-                        rEmoji = "🔁" 
+                    #Decides what emoji to add based on if it is a duplicate or not
+                    if(test == True):
+                        await msg.add_reaction (rEmoji)
+                    else:
+                        # Once added to DB send to spotify to add to playlist
+                        print(pgrm_signature + playlist_update.sendOff(playlist_link))
+                        await msg.add_reaction(checkEmoji) #adds emoji when song is added to playlist
 
-                        # Check to see if the song is duplicate, if not add it to the DB
-                        test = dupCheck(msg, playlist_link)
+                        # Warn users that previous songs may not be accounted for as grabPast has NOT been called
+                        if(setup_info[3] == 0):
+                            await msg.reply("WARNING GRAB PAST FLAG IS STILL ZERO, IF THERE ARE NO PAST SONGS YOU NEED TO GRAB. SET THE GRAB PAST FLAG TO ZERO IN setup.json AND RESTART spotbot.py. THIS WILL CAUSE ERRORS ELSEWISE")
+                        
+                        # Check for acheivements (connect to db, get song count)
+                        conn = sqlite3.connect('spotbot.db')
+                        cur = conn.cursor()
 
-                        #Decides what emoji to add based on if it is a duplicate or not
-                        if(test == True):
-                            await msg.add_reaction (rEmoji)
-                        else:
-                            # Once added to DB send to spotify to add to playlist
-                            print(pgrm_signature + playlist_update.sendOff(playlist_link))
-                            await msg.add_reaction(checkEmoji) #adds emoji when song is added to playlist
+                        cur.execute("SELECT COUNT(*) FROM songs WHERE playlist_ID = ?", (getPlaylistID(playlist_link),))
+                        songs = cur.fetchone()[0]
 
-                            # Warn users that previous songs may not be accounted for as grabPast has NOT been called
-                            if(grab_past_flag == 0):
-                                await msg.reply("WARNING GRAB PAST FLAG IS STILL ZERO, IF THERE ARE NO PAST SONGS YOU NEED TO GRAB. SET THE GRAB PAST FLAG TO ZERO IN setup.json AND RESTART spotbot.py. THIS WILL CAUSE ERRORS ELSEWISE")
-                            
-                            # Check for acheivements (connect to db, get song count)
-                            conn = sqlite3.connect('spotbot.db')
-                            cur = conn.cursor()
+                        # Every 10 songs check for achievements (For perfromance)
+                        if (songs % 5 == 0 or songs == 69):
+                            # Get the acheivement string (if any)
+                            celebration = achievements.checkAchievement(songs, setup_info[3])
 
-                            cur.execute("SELECT COUNT(*) FROM songs WHERE playlist_ID = ?", (getPlaylistID(playlist_link),))
-                            songs = cur.fetchone()[0]
+                            # Get duration achievement (if any)
+                            duration = achievements.checkDurationAchievement(playlist_update.get_playlist_duration(playlist_link))
 
-                            # Every 10 songs check for achievements (For perfromance)
-                            if (songs % 5 == 0 or songs == 69):
-                                # Get the acheivement string (if any)
-                                celebration = achievements.checkAchievement(songs, grab_past_flag)
+                            # If there is a celebration, send the message
+                            if(celebration):
+                                await msg.channel.send(celebration)
+                            if(duration):
+                                await msg.channel.send(duration)
+                        
+                        conn.close()
 
-                                # Get duration achievement (if any)
-                                duration = achievements.checkDurationAchievement(playlist_update.get_playlist_duration(playlist_link))
+            else:
+                # Print to the terminal that a message was recieved but it is NOT a spotify link
+                print(pgrm_signature + "Not valid Spotify link")
+        
+            await bot.process_commands(msg)
 
-                                # If there is a celebration, send the message
-                                if(celebration):
-                                    await msg.channel.send(celebration)
-                                if(duration):
-                                    await msg.channel.send(duration)
-                            
-                            conn.close()
-
-                else:
-                    # Print to the terminal that a message was recieved but it is NOT a spotify link
-                    print(pgrm_signature + "Not valid Spotify link")
-            
-                await bot.process_commands(msg)
-
-                # Return True to show success and break from any loops
-                return True
+            # Return True to show success and break from any loops
+            return True
 
 
 
 @bot.command()
 async def waves(ctx, arg):
-    # Command only functions within the global variable: discord_channel, specified in setup.json
-    if ctx.channel.id == discord_channel:
-        try:
-            # Regex to ensure argument passed to command is acceptable
-            uri_regex = r'https://open.spotify.com/track/(.+?)\?si='
-            wave_uri = re.search(uri_regex, arg)
-            # Format URL string for async request
-            wave_url = 'https://scannables.scdn.co/uri/plain/png/000000/white/640/spotify:track:%s' % (wave_uri.group(1))
-            # Async request for a response from variable: wave_url
-            async with aiohttp.ClientSession() as wave_session:
-                async with wave_session.get(wave_url) as wave_resp:
-                    # Catch "unsuccessful" (not 200) response status
-                    if wave_resp.status != 200:
-                        return await ctx.send('Wavecode not found')
-                    wave_img = io.BytesIO(await wave_resp.read())
-            # Sends image structured in Bytes as a discord.File in the channel
-            await ctx.send(file=discord.File(wave_img, '%s_wavecode.png' % (wave_uri.group(1))))
+    playlist_array = database_tools.get_playlist_array('secrets.db', ctx.message.guild.name)
+    # 0 index is URL, 1 index is discord channelID
 
-        # Catching unexpected errors
-        except Exception as err:
-            print(pgrm_signature + "Error occurred -> %s" % err)
+    for playlist in playlist_array:
+        # Command only functions within the global variable: discord_channel, specified in setup.json
+        if ctx.channel.id == int(playlist[1]):
+            try:
+                # Regex to ensure argument passed to command is acceptable
+                uri_regex = r'https://open.spotify.com/track/(.+?)\?si='
+                wave_uri = re.search(uri_regex, arg)
+                # Format URL string for async request
+                wave_url = 'https://scannables.scdn.co/uri/plain/png/000000/white/640/spotify:track:%s' % (wave_uri.group(1))
+                # Async request for a response from variable: wave_url
+                async with aiohttp.ClientSession() as wave_session:
+                    async with wave_session.get(wave_url) as wave_resp:
+                        # Catch "unsuccessful" (not 200) response status
+                        if wave_resp.status != 200:
+                            return await ctx.send('Wavecode not found')
+                        wave_img = io.BytesIO(await wave_resp.read())
+                # Sends image structured in Bytes as a discord.File in the channel
+                await ctx.send(file=discord.File(wave_img, '%s_wavecode.png' % (wave_uri.group(1))))
+
+            # Catching unexpected errors
+            except Exception as err:
+                print(pgrm_signature + "Error occurred -> %s" % err)
 
 async def fetch_message_history(channel_ID):
     channel = bot.get_channel(channel_ID)
@@ -601,9 +609,9 @@ def getPlaylistID(playlist_link):
     return playlist_link.split('/')[-1].split('?')[0]
 
 # Initialize the database if not created yet
-database_tools.initialize_database("spotbot.db")
+# database_tools.initialize_database("spotbot.db", get_playlist_array)
 
 # Refresh the token upon startup
 playlist_update.startup_token_refresh()
 
-bot.run(TOKEN)
+bot.run(TOKEN[0])

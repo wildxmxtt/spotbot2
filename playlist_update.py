@@ -149,6 +149,22 @@ def get_spotify_api_object(now, data, TOKEN, refresh_token, expires_at):
 
     return sp
 
+# Method that retreves the tracks name and artist from spotify
+def get_track_name_and_artist(trackID):
+    data, TOKEN, refresh_token, expires_at = get_spotify_json()
+
+    now = int(time.time())#gets the current time
+
+    sp = get_spotify_api_object(now, data, TOKEN, refresh_token, expires_at)
+
+    track = sp.track(trackID)
+    artists = track['artists']
+    # {track['artists']['name']
+
+    return f"{track['name']} - {artists[0]['name']}"
+
+
+
 # Token refresh method for startup
 def startup_token_refresh():
     # Get old token information

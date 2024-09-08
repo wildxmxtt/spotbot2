@@ -225,9 +225,13 @@ async def reactChamp(ctx):
         # Get username
         member = guild.get_member(message[3])
 
+        # Get track name and artist(s)
+        trackID = getSpotifyID(message[2])
+        nameAndArtist = playlist_update.get_track_name_and_artist(trackID)
+
         #will need username and link maybe?
         field_value = f"{message[1]} reaction(s) - "
-        field_value += f"[Listen Here]({message[2]})"
+        field_value += f"[{nameAndArtist}]({message[2]})"
         embed.add_field(name=f"{loops}. {member.display_name}", value=field_value, inline=False)
         loops += 1
 
@@ -259,7 +263,7 @@ async def localreactChamp(ctx):
             current_month = current_date.month
 
             playlist_link = database_tools.get_playlist_link('secrets.db', playlist[1])
-            playlist_ID = getPlaylistID(playlist_link[0])
+            playlist_ID = getSpotifyID(playlist_link[0])
 
             # Get top 10 users and their number of songs added for the current month for the specified playlist
             cur.execute("""
@@ -301,9 +305,13 @@ async def localreactChamp(ctx):
                 # Get username
                 member = guild.get_member(message[3])
 
+                # Get track name and artist(s)
+                trackID = getSpotifyID(message[2])
+                nameAndArtist = playlist_update.get_track_name_and_artist(trackID)
+
                 #will need username and link maybe?
                 field_value = f"{message[1]} reaction(s) - "
-                field_value += f"[Listen Here]({message[2]})"
+                field_value += f"[{nameAndArtist}]({message[2]})"
                 embed.add_field(name=f"{loops}. {member.display_name}", value=field_value, inline=False)
                 loops += 1
 
@@ -447,7 +455,7 @@ async def on_message(msg):
                         conn = sqlite3.connect('spotbot.db')
                         cur = conn.cursor()
 
-                        cur.execute("SELECT COUNT(*) FROM songs WHERE playlist_ID = ?", (getPlaylistID(playlist_link),))
+                        cur.execute("SELECT COUNT(*) FROM songs WHERE playlist_ID = ?", (getSpotifyID(playlist_link),))
                         songs = cur.fetchone()[0]
 
                         # Every 10 songs check for achievements (For perfromance)
@@ -550,7 +558,7 @@ def dupCheck(msg, playlist_link):
     # Attempt to select spotify_ID
     # input sanitization - https://realpython.com/prevent-python-sql-injection/
     # Check if there is a song id in the specified playlist
-    playlist_ID = getPlaylistID(playlist_link)
+    playlist_ID = getSpotifyID(playlist_link)
     cur.execute("SELECT spotify_ID FROM songs WHERE spotify_ID = ? AND playlist_ID = ?", (stripped,playlist_ID,))
     matches = cur.fetchone()
 
@@ -680,7 +688,7 @@ def getMessageID(msg):
     # return the sender ID to be used in dupCheck to be recorded in the songs playlist
     return message_id
 
-def getPlaylistID(playlist_link):
+def getSpotifyID(playlist_link):
     # Return the playlist ID
     return playlist_link.split('/')[-1].split('?')[0]
 

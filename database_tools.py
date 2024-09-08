@@ -101,5 +101,16 @@ def get_playlist_array(file, server_name):
 
     return sql_results
 
+# Returns the playlist link using the chat ID
+def get_playlist_link(file, chat_ID):
+    conn = sqlite3.connect(file)
+    cur = conn.cursor()
 
-get_playlist_array("secrets.db", "Bot testing server")
+    # query for the playlist ID
+    cur.execute("SELECT playlist_link FROM chats WHERE discord_channel = ?", (chat_ID,))
+
+    playlist_link = cur.fetchone()
+    conn.close()
+
+    return playlist_link
+

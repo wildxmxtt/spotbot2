@@ -177,7 +177,7 @@ async def reactChamp(ctx):
     # warn user this may take a while
     await ctx.send(f"Grabbing messages - this may take a while...")
 
-    # Connect to or create SQLite Database
+    # Connect to SQLite Database
     conn = sqlite3.connect('spotbot.db') # create or connect to the database
     cur = conn.cursor()
 
@@ -210,7 +210,7 @@ async def reactChamp(ctx):
             print(f"Failed to fetch message {msg_id[1]}")
 
     # Sort the results
-    # sorted is fed messages, key=lambda (idk why), x[1] for the reaction cound, 
+    # sorted is fed messages, key=lambda (idk why), x[1] for the reaction count, 
     # and reverse true for descending orde. [:5] to get the top 5
     top_messages = sorted(messages, key=lambda x: x[1], reverse=True)[:5]
 
@@ -234,6 +234,82 @@ async def reactChamp(ctx):
     await ctx.send(embed=embed)
 
     conn.close()
+
+# A request that produces a leaderboard with this months hight reacted songs local to the represented playlist
+@bot.command()
+async def localreactChamp(ctx):
+    # Get set up info and playlists
+    setup_info = database_tools.get_setup_info('secrets.db', ctx.message.guild.name)
+    playlist_array = database_tools.get_playlist_array('secrets.db', ctx.message.guild.name)
+
+    # Check if the leaderboard information is enabled via setup.json
+    if setup_info[4] == 0: return False
+
+    for playlist in playlist_array:
+        if ctx.channel.id == int(playlist[1]):
+            # warn user this may take a while
+            await ctx.send(f"Grabbing messages - this may take a while...")
+
+            # Connect to SQLite Database
+            conn = sqlite3.connect('spotbot.db')
+            cur = conn.cursor()
+
+            current_date = datetime.now()
+            current_year = current_date.year
+            current_month = current_date.month
+
+            playlist_link = database_tools.get_playlist_link('secrets.db', playlist[1])
+            playlist_ID = getPlaylistID(playlist_link[0])
+
+            # Get top 10 users and their number of songs added for the current month for the specified playlist
+            cur.execute("""
+                SELECT spotify_id, discord_message_id, sender_ID
+                FROM songs
+                WHERE strftime('%Y', timestamp) = ? AND strftime('%m', timestamp) = ? AND playlist_ID = ?
+            """, (str(current_year), f"{current_month:02d}", playlist_ID,))
+
+            message_ids = cur.fetchall()
+
+            messages = []
+            # loop through each message ID
+            for msg_id in message_ids:
+                try:
+                    message = await ctx.channel.fetch_message(msg_id[1])                        # Grab each message
+                    total_reactions = sum(reaction.count for reaction in message.reactions)     # grab the total amount of reacitons for respective message
+                    if total_reactions > 1:
+                        messages.append((message, total_reactions-1, msg_id[0], msg_id[2]))       # Add tuple of message, total reactions, and the spotify link
+                except discord.NotFound:
+                    print(f"{pgrm_signature}: Message with ID {msg_id[1]} not found")
+                except discord.Forbidden:
+                    print(f"{pgrm_signature}: Bot doesn't have permission to fetch message {msg_id[0]}")
+                except discord.HTTPException:
+                    print(f"Failed to fetch message {msg_id[1]}")
+
+            # Sort the results
+            # sorted is fed messages, key=lambda (idk why), x[1] for the reaction count, 
+            # and reverse true for descending orde. [:5] to get the top 5
+            top_messages = sorted(messages, key=lambda x: x[1], reverse=True)[:5]
+
+            # make and send the embed
+            title = f"Reaction Champions for {calendar.month_name[current_month]}"
+            embed = discord.Embed(title=title, color=0x1DB954, url=playlist[0])
+            embed.description = "The top 5 highest reacted songs this month"
+
+            loops = 1
+            guild = ctx.guild
+            for message in top_messages:
+                # Get username
+                member = guild.get_member(message[3])
+
+                #will need username and link maybe?
+                field_value = f"{message[1]} reaction(s) - "
+                field_value += f"[Listen Here]({message[2]})"
+                embed.add_field(name=f"{loops}. {member.display_name}", value=field_value, inline=False)
+                loops += 1
+
+            await ctx.send(embed=embed)
+
+            conn.close()
 
 # Using the result from an SQL querey, an embed is created and sent
 async def sendLeaderBoardEmbed(ctx, results, title):

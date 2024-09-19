@@ -53,7 +53,8 @@ async def hlp(ctx):
     if int(setup_info[4]) == 1:
         helpText += ("[!]leaderboard (gives a leadearboard of all time highest contributing users) \n" +
             "[!]thismonth (gives a leaderboard of this months hightst contributing users) \n" +
-            "[!]reactchamp (gives a leaderboard of this months most reacted contributed songs) \n")
+            "[!]reactchamp (gives a leaderboard of this months most reacted contributed songs) \n" +
+            "[!]localreactchamp (gives a leaderboard of this months most reacted contributed songs)")
 
     await ctx.reply(helpText +
             "When a user sends a messsage in this chat the bot will analyze that message, if it is a valid spotify link it will be placed into the playlist\n")

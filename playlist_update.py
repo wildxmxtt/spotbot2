@@ -88,11 +88,11 @@ def get_playlist_duration(playlist_link):
 #sendOff() used to debug file
 
 #This function keep the user from having to get a new token manually every hour
-def refresh_the_token(data, TOKEN, refresh_token): 
+def refresh_the_token(data, TOKEN, refresh_token, server_name): 
         #This code was made possible by https://www.youtube.com/watch?v=-FsFT6OwE1A 
         #Notable timestamps 10:14, 40:25
 
-        database_tools.get_setup_info
+        database_tools.get_setup_info('secrets.db', server_name)
 
         auth_client = client_id + ":" + client_secret
         auth_encode = 'Basic ' + base64.b64encode(auth_client.encode()).decode()

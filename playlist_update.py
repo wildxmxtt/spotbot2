@@ -4,11 +4,12 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import requests
 import base64
+import database_tools
 
-with open("setup.json", 'r') as info:
-        data = json.load(info) 
-        client_id = (data['client_id'])
-        client_secret = (data['client_secret'])
+#with open("setup.json", 'r') as info:
+#        data = json.load(info) 
+#        client_id = (data['client_id'])
+#        client_secret = (data['client_secret'])
 pgrm_signature = "playlist_update.py: "
 
 def sendOff(playlist_link):
@@ -90,6 +91,8 @@ def get_playlist_duration(playlist_link):
 def refresh_the_token(data, TOKEN, refresh_token): 
         #This code was made possible by https://www.youtube.com/watch?v=-FsFT6OwE1A 
         #Notable timestamps 10:14, 40:25
+
+        database_tools.get_setup_info
 
         auth_client = client_id + ":" + client_secret
         auth_encode = 'Basic ' + base64.b64encode(auth_client.encode()).decode()

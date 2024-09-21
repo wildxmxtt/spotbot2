@@ -75,13 +75,13 @@ def initialize_database(file, playlist_array):
 
 # Returns setup information. Indexes are as follows:
 # 0 client id, 1 client secret, 2 discord token, 3 grab past flag, 4 leaderboards flag, 5 server name
-def get_setup_info(file, server_name):
+def get_setup_info(file):
     # Connect to database
     conn = sqlite3.connect(file)
     cur = conn.cursor()
 
     # Get server setup info for the server
-    cur.execute("SELECT * FROM setup WHERE server_name = ?", (server_name,))
+    cur.execute("SELECT * FROM setup")
 
     sql_results = cur.fetchone()
     conn.close()
@@ -90,11 +90,11 @@ def get_setup_info(file, server_name):
     return sql_results
 
 # Returns tuples of playlist information. Index 0 is the playlist link, index 1 is the discord channel ID
-def get_playlist_array(file, server_name):
+def get_playlist_array(file):
     conn = sqlite3.connect(file)
     cur = conn.cursor()
 
-    cur.execute("SELECT playlist_link,discord_channel FROM chats WHERE server_name = ?", (server_name,))
+    cur.execute("SELECT playlist_link,discord_channel FROM chats ")
 
     sql_results = cur.fetchall()
     conn.close()

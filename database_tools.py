@@ -5,47 +5,10 @@ import sqlite3
 pgrm_signature = "database_tools.py"
 
 
-def initialize_database(file, playlist_array):
+def initialize_milestones(file, playlist_array):
     # Check to see if the database file already exists
-    db_exists = path.exists(file)
-
-    # If the databse doesn't exist, create the tables
-    if not db_exists:
-        tables = [
-            f"""
-            CREATE TABLE IF NOT EXISTS songs (
-            song_table_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-            spotify_ID TEXT,
-            playlist_ID TEXT,
-            sender_ID INTEGER,
-            timestamp TEXT,
-            discord_message_id TEXT
-            )
-            """,
-            f"""
-            CREATE TABLE IF NOT EXISTS playlist_duration_milestones (
-            playlist_id TEXT,
-            milestone INTEGER,
-            reached_at DATETIME,
-            PRIMARY KEY (playlist_id, milestone)
-            )
-            """]
-
-        conn = sqlite3.connect(file)
-        cur = conn.cursor()
-
-        # Execute the statements
-        cur.execute(tables[0])
-        cur.execute(tables[1])
-
-        print(f"{pgrm_signature}: Fresh database initialized.")
-
-        # Commit the changes
-        conn.commit()
-        conn.close()
-
-        # Break from the function if fresh tables are created
-        return True
+    if not path.exists(file):
+        print(f'ERROR {pgrm_signature}: {file} does not exist!')
     
     # If the database exists connect and playlist_duration tables
     conn = sqlite3.connect(file)
@@ -94,7 +57,7 @@ def get_playlist_array(file):
     conn = sqlite3.connect(file)
     cur = conn.cursor()
 
-    cur.execute("SELECT playlist_link,discord_channel FROM chats ")
+    cur.execute("SELECT playlist_link,discord_channel FROM chats")
 
     sql_results = cur.fetchall()
     conn.close()

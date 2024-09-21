@@ -63,7 +63,7 @@ async def hlp(ctx):
 #gives the link set in the setup.json file
 @bot.command()
 async def sLink(ctx):
-    playlist_array = database_tools.get_playlist_array('secrets.db', ctx.message.guild.name)
+    playlist_array = database_tools.get_playlist_array('secrets.db')
     
     for playlist in playlist_array:
         if int(playlist[1]) == ctx.channel.id:
@@ -245,7 +245,7 @@ async def reactChamp(ctx):
 async def localreactChamp(ctx):
     # Get set up info and playlists
     setup_info = database_tools.get_setup_info('secrets.db', ctx.message.guild.name)
-    playlist_array = database_tools.get_playlist_array('secrets.db', ctx.message.guild.name)
+    playlist_array = database_tools.get_playlist_array('secrets.db')
 
     # Check if the leaderboard information is enabled via setup.json
     if setup_info[4] == 0: return False
@@ -381,7 +381,7 @@ async def grabPast(ctx):
         await ctx.reply("Grabbing songs now please wait until FINISHED is sent")                
         await ctx.send("Grabbing & Flitering Past Messages (this could take a while).....")
 
-        playlist_array = database_tools.get_playlist_array('secrets.db', ctx.message.guild.name)
+        playlist_array = database_tools.get_playlist_array('secrets.db')
         # 0 index is URL, 1 index is discord channelID
 
         # Loop through available playlists
@@ -416,7 +416,7 @@ async def grabPast(ctx):
 async def on_message(msg):
     # Get the set up info and playlist array
     setup_info = database_tools.get_setup_info('secrets.db', msg.guild.name)
-    playlist_array = database_tools.get_playlist_array('secrets.db', msg.guild.name)
+    playlist_array = database_tools.get_playlist_array('secrets.db')
     
 
     # Loop through available playlists
@@ -488,7 +488,7 @@ async def on_message(msg):
 
 @bot.command()
 async def waves(ctx, arg):
-    playlist_array = database_tools.get_playlist_array('secrets.db', ctx.message.guild.name)
+    playlist_array = database_tools.get_playlist_array('secrets.db')
     # 0 index is URL, 1 index is discord channelID
 
     for playlist in playlist_array:
@@ -694,7 +694,7 @@ def getSpotifyID(playlist_link):
     return playlist_link.split('/')[-1].split('?')[0]
 
 # Initialize the database if not created yet
-# database_tools.initialize_database("spotbot.db", get_playlist_array)
+database_tools.initialize_milestones("spotbot.db", database_tools.get_playlist_array('secrets.db'))
 
 # Refresh the token upon startup
 playlist_update.startup_token_refresh()

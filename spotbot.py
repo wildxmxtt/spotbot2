@@ -16,7 +16,7 @@ with open("setup.json", 'r') as setupf:
     client_secret = (data['client_secret'])
     playlist_link = (data['playlist_link'])
     grab_past_flag = (data['grab_past_flag'])
-    discord_channel = (data['discord_channel'])
+    discord_channel = (data['discord_channels'])
 
 
 intents = discord.Intents.all()
@@ -109,33 +109,40 @@ async def grabPast(ctx):
 
 @bot.event
 async def on_message(msg):
-    #grabs the discord channel specified in setup.json
-    if msg.channel.id == discord_channel:
-    #once again, all the file work can be moved over to the dupCheck() function for single file handling
-        strCheck = "https://open.spotify.com/track"
+    #for all of the channels specifed inside of discrod channel (TO-DO: MUST MAKE in app write an array, im sure in sql lite we can do sum tho)
+    for channels in discord_channel: 
+        #grabs the discord channel specified in setup.json
+        if msg.channel.id == int(channels):
+        #once again, all the file work can be moved over to the dupCheck() function for single file handling
+            strCheck = "https://open.spotify.com/track"
 
-        if re.search(strCheck, msg.content):
-            if not "The random song you got was:" in str(msg.content): # Without this it would catch all songs comand as a new link for some reason.
-                print(pgrm_signature + "Valid Spotify Link")
+            if re.search(strCheck, msg.content):
+                if not "The random song you got was:" in str(msg.content): # Without this it would catch all songs comand as a new link for some reason.
+                    print(pgrm_signature + "Valid Spotify Link")
 
-                checkEmoji = "☑️"
-                rEmoji = "🔁" 
+                    checkEmoji = "☑️"
+                    rEmoji = "🔁" 
 
-                test = dupCheck(msg.content)
+                    test = dupCheck(msg.content)
 
-        #Decides what emoji to add based on if it is a duplicate or not
-                if(test == True):
-                    await msg.add_reaction (rEmoji)
-                else:
-                    print(pgrm_signature + playlist_update.sendOff())
-                    await msg.add_reaction(checkEmoji) #adds emoji when song is added to playlist
-                    if(grab_past_flag == 0):
-                        await msg.reply("WARNING GRAB PAST FLAG IS STILL ZERO, IF THERE ARE NO PAST SONGS YOU NEED TO GRAB. SET THE GRAB PAST FLAG TO ZERO IN setup.json AND RESTART spotbot.py. THIS WILL CAUSE ERRORS ELSEWISE")
+            #Decides what emoji to add based on if it is a duplicate or not
+                    if(test == True):
+                        await msg.add_reaction (rEmoji)
+                    else:
+                        print(pgrm_signature + playlist_update.sendOff())
+                        await msg.add_reaction(checkEmoji) #adds emoji when song is added to playlist
+                        if(grab_past_flag == 0):
+                            await msg.reply("WARNING GRAB PAST FLAG IS STILL ZERO, IF THERE ARE NO PAST SONGS YOU NEED TO GRAB. SET THE GRAB PAST FLAG TO ZERO IN setup.json AND RESTART spotbot.py. THIS WILL CAUSE ERRORS ELSEWISE")
+            #this else relates to if re.search(strCheck, msg.content):
+            else:            
+                print(pgrm_signature + "Not valid Spotify link in channel " + str(msg.channel.id) )
+                await bot.process_commands(msg)
 
+        #this else relates to channel not being correct
         else:            
-            print(pgrm_signature + "Not valid Spotify link")
-    
-        await bot.process_commands(msg)
+            print(pgrm_signature + "Not valid Spotify channel: " + str(msg.channel.id) + " | spotbot looking at channels: " + discord_channel)
+        
+            await bot.process_commands(msg)
 
 
 #checks for duplicates before sending songs off to uri.txt

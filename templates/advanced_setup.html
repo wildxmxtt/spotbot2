@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Advanced Setup</title>
+    <script>
+        function showPopup(message) {
+            alert(message);
+        }
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Advanced Setup</h1>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <script>
+                showPopup("{{ messages[0] }}");
+            </script>
+        {% endif %}
+    {% endwith %}
+    <form action="{{ url_for('advanced_setup') }}" method="post">
+        <label for="client_id">Spotify Client ID:</label>
+        <input type="text" id="client_id" name="client_id" value="{{ client_id }}" required><br><br>
+        
+        <label for="client_secret">Spotify Client Secret:</label>
+        <input type="text" id="client_secret" name="client_secret" value="{{ client_secret }}" required><br><br>
+        
+        <label for="discord_token">Discord Bot Token:</label>
+        <input type="text" id="discord_token" name="discord_token" value="{{ discord_token }}" required><br><br>
+        
+        <label for="playlist_links">Spotify Playlist(s) Links (comma-separated):</label>
+        <input type="text" id="playlist_links" name="playlist_links" value="{{ playlist_links }}" required><br><br>
+        
+        <label for="discord_channels">Discord Channel ID(s) (comma-separated):</label>
+        <input type="text" id="discord_channels" name="discord_channels" value="{{ discord_channels }}" required><br><br>
+        <br><br>
+        <h3>Descriptions</h3> 
+        <label>Spotify Client ID: Public Identifier for Spotify Application</label> <br><br>
+        <label>Spotify Client Secret: Secret Identifier for Spotify Application, your access to the application</label> <br><br>
+        <label>Discord Token: Token to run your Discord bot running Spotbot2 code (Spotbot.py)</label>  <br><br>
+        <label>Playlist Links: Your Spotify Playlist Links where you want Spotbot2 to point to</label> <br><br>
+        <label>Discord Channels: Which Discord channels you want Spotbot2 to read</label>  <br><br> <br><br>
+
+        <h3>Extra Features</h3>
+        <p>Select features to install:</p>
+        {% for feature, installed in installed_features.items() %}
+            <label>
+                <input type="checkbox" name="features" value="{{ feature }}"
+                       {% if installed %}checked{% endif %}>
+                {{ feature }}
+            </label><br>
+        {% endfor %}
+        
+        
+        <br>
+        <button type="submit">Save/Update</button>
+    </form>
+    <br>
+    <button onclick="window.history.back()">Previous</button>
+    <br><br>
+</body>
+</html>

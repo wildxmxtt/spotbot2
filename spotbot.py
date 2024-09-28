@@ -421,7 +421,7 @@ async def on_message(msg):
 
     # Loop through available playlists
     for playlist in playlist_array:
-    
+        #for channels in discord_channel: 
         # If the link is sent into the chat specified
         if msg.channel.id == int(playlist[1]):
             # Record playlist link
@@ -475,9 +475,8 @@ async def on_message(msg):
                         
                         conn.close()
 
-            else:
-                # Print to the terminal that a message was recieved but it is NOT a spotify link
-                print(pgrm_signature + "Not valid Spotify link")
+        else:            
+            print(pgrm_signature + "Not valid Spotify channel: " + str(msg.channel.id) + " | spotbot looking at channels: " + int(playlist[1]))
         
             await bot.process_commands(msg)
 

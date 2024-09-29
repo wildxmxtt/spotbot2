@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>Spotify Playlist Info</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-
 </head>
 <body>
     <h1>Continued Setup</h1>
@@ -23,33 +22,34 @@
     <form action="{{ url_for('advanced_setup') }}" method="get">
         <button type="submit">Advanced Setup Page</button>
     </form>
-    <form action="{{ url_for('advanced_setup') }}" method="post">
+    
+    <!-- <form action="{{ url_for('save_setup') }}" method="post">
         <p>#1: Spotify Setup </p>
         <ul>Please go to: <a href="https://developer.spotify.com/dashboard">Spotify Developer Webpage</a></ul>
         <ul>You need to click login at the top right hand corner of the page </ul>
         <ul>After logging in with your Spotify account, you want to select create app</ul>
         <ul>Once your app has been created you need to give it:</ul>
         <ol>
-        <li>App Name</li>
-        <li>App Description</li>
-        <li>Redirect URI's</li>
-        <p>For the Redirect URIs please use the following, copy and paste one by one, ensure to click add on the dev portal</p>
-        <p>http://127.0.0.1:5000/</p>
-        <p>http://127.0.0.1:5000/redirect</p>
-        <p>http://localhost:5000/callback/</p>
-        <p>http://localhost:5000/redirect</p>
-        <p>http://localhost:5000/redirect/</p>
-        <p>http://127.0.0.1:5000/callback</p>
-        <p>http://localhost:5000/callback</p>
-        <li>Then select the Web API checkbox, this is the only API you will need</li>
-        <li>Then read and agree with the dev terms of service, and then click save</li>
-        <li>Next after clicking save, click on settings</li>
-        <li>Copy the Client ID & copy and paste it here:</li>
-        <form action="{{ url_for('save_setup') }}" method="post">
+            <li>App Name</li>
+            <li>App Description</li>
+            <li>Redirect URI's</li>
+            <p>For the Redirect URIs please use the following, copy and paste one by one, ensure to click add on the dev portal</p>
+            <p>http://127.0.0.1:5000/</p>
+            <p>http://127.0.0.1:5000/redirect</p>
+            <p>http://localhost:5000/callback/</p>
+            <p>http://localhost:5000/redirect</p>
+            <p>http://localhost:5000/redirect/</p>
+            <p>http://127.0.0.1:5000/callback</p>
+            <p>http://localhost:5000/callback</p>
+            <li>Then select the Web API checkbox, this is the only API you will need</li>
+            <li>Then read and agree with the dev terms of service, and then click save</li>
+            <li>Next after clicking save, click on settings</li>
+            <li>Copy the Client ID & copy and paste it here:</li>
             <input type="text" id="client_id" name="client_id" required><br><br>
             <li>View the Client Secret & copy and paste it here:</li>
             <input type="text" id="client_secret" name="client_secret" required><br><br>
-        </form>
+        </ol> -->
+
         <p>#2: Discord Setup </p>
         <ul>Please go to: <a href="https://discord.com/developers">Discord Developer Webpage</a></ul>
         <ul>Login with your discord credentials</ul>
@@ -79,16 +79,11 @@
         <li>Turn on Server Memebers Intent</li>
         <li>Turn on Message Content Intent</li>
         <li>Press reset access token and paste that access token in here:</li>
-
         <input type="text" id="discord_token" name="discord_token" required><br><br>
 
-        <ul></ul>
-
-        
         <h3>Customize your Spotbot Install</h3>
         <p>Select features to install:</p>
         {% for feature, installed in installed_features.items() %}
-
             <label>
                 <input type="checkbox" name="features" value="{{ feature }}"
                        {% if installed %}checked{% endif %}>
@@ -105,7 +100,6 @@
         <input type="text" id="discord_channels" name="discord_channels" value="{{ discord_channels }}" required><br><br>
 
         <button type="submit">Save</button>
-        </form>
-    </ol>
+    </form>
 </body>
 </html>

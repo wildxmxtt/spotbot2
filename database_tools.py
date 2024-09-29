@@ -52,6 +52,64 @@ def get_setup_info(file):
     # Return information
     return sql_results
 
+def get_secret_setup_info_dict(file):
+
+    setup_info_dict = {
+        'client_id': 0,
+        'client_secret': 1,
+        'discord_token': 2,
+        'grab_past_flag': 3,
+        'leaderboards_flag': 4,
+        'server_name': 5                
+    }
+
+    # Connect to database
+    conn = sqlite3.connect(file)
+    cur = conn.cursor()
+
+    # Get server setup info for the server
+    cur.execute("SELECT * FROM setup")
+
+    sql_results = cur.fetchone()
+    conn.close()
+    if sql_results is not None:
+        for i in range(len(setup_info_dict)):
+            setup_info_dict[list(setup_info_dict.keys())[i]] = list(sql_results)[i]
+
+        # Return information
+        return setup_info_dict
+    else: 
+        return None
+
+
+def get_pub_setup_info_dict(file):
+
+    setup_info_dict = {
+        'client_id': 0,
+        'client_secret': 1,
+        'discord_token': 2,
+        'grab_past_flag': 3,
+        'leaderboards_flag': 4,
+        'server_name': 5                
+    }
+
+    # Connect to database
+    conn = sqlite3.connect(file)
+    cur = conn.cursor()
+
+    # Get server setup info for the server
+    cur.execute("SELECT * FROM songs")
+
+    sql_results = cur.fetchone()
+    conn.close()
+
+    for i in range(len(setup_info_dict)):
+        setup_info_dict[list(setup_info_dict.keys())[i]] = list(sql_results)[i]
+
+    # Return information
+    return setup_info_dict
+
+
 # Returns tuples of playlist information. Index 0 is the playlist link, index 1 is the discord channel ID
 def get_playlist_array(file):
     conn = sqlite3.connect(file)
@@ -77,3 +135,10 @@ def get_playlist_link(file, chat_ID):
 
     return playlist_link
 
+# secret_setup_info = get_secret_setup_info_dict('spotbot.db')
+# secret_setup_info = get_setup_info(r'databases\secrets.db')
+
+
+# secret_setup_info = get_secret_setup_info_dict(r'databases\secrets.db')
+# client_id = secret_setup_info['client_id']
+# client_secret = secret_setup_info['client_secret']

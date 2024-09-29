@@ -1,10 +1,10 @@
 from flask import Flask, request, url_for, session, redirect, render_template, flash
-import spotipy
+import spotipy, sqlite3
 from spotipy.oauth2 import SpotifyOAuth
-import time
-import json
+import time, os
 from datetime import datetime
 from spotipy.oauth2 import SpotifyClientCredentials
+import database_tools as dbt
 
 app = Flask(__name__)
 
@@ -14,28 +14,20 @@ TOKEN_INFO = "token_info"
 
 playlist_array = []
 
-#gets info from setup file
-with open('setup.json', 'r') as setupf:
-    data = json.load(setupf)
-    client_id = (data['client_id'])
-    client_secret = (data['client_secret'])
-    playlists = (data['playlists'])
+# Sets up our secret information into the application from secrets.db
+secret_setup_info = dbt.get_secret_setup_info_dict(r'databases\secrets.db')
+if secret_setup_info is not None:
+    client_id = secret_setup_info['client_id']
+    client_secret = secret_setup_info['client_secret']
 
-    for playlist in playlists:
-        # Extract playlist attributes
-        playlist_name = playlist['playlist_name']
-        playlist_link = playlist['playlist_link']
-        discord_channel = playlist['discord_channel']
-        
-        # Add to playlist array
-        playlist_array.append([playlist_name, playlist_link, discord_channel])
-
-
-#do this function above twice
-
-#a session is where we store data about a users session, prevents reloggin in
-#setting up endpoints
-
+# Sample installed features setup
+# This can later be populated from an external source or form submission in the future
+installed_features = {
+    "Spotify Integration": True,
+    "Discord Integration": True,
+    "Track Playlist Milestones": False,
+    "Track Song Plays": False,
+}
 
 @app.route('/')
 def index():
@@ -43,6 +35,53 @@ def index():
     timestamp = ''
     return render_template('index.html', num_songs=num_songs, timestamp=timestamp)
 
+@app.route('/view_database/<db_name>', methods=['GET', 'POST'])
+def view_database(db_name):
+    db_folder = "databases/"
+    db_path = f"{db_folder}{db_name}.db"
+    db_files = [f.split('.')[0] for f in os.listdir(db_folder) if f.endswith('.db')]
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    tables = [table[0] for table in cursor.fetchall()]
+
+    table_data = None
+    column_names = None
+    selected_table = None
+
+    if request.method == 'POST':
+        selected_table = request.form['table']
+        cursor.execute(f"PRAGMA table_info({selected_table})")
+        column_names = [info[1] for info in cursor.fetchall()]
+        cursor.execute(f'SELECT * FROM {selected_table}')
+        table_data = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        'database_view.html', 
+        db_files=db_files, 
+        selected_db=db_name, 
+        tables=tables, 
+        selected_table=selected_table, 
+        data=table_data, 
+        column_names=column_names
+    )
+@app.route('/save_advanced_setup', methods=['POST'])
+def save_advanced_setup():
+    setup_data = {
+        'client_id': request.form['client_id'],
+        'client_secret': request.form['client_secret'],
+        'discord_token': request.form['discord_token'],
+        'playlist_link': request.form['playlist_links'],
+        'discord_channel': request.form['discord_channels'],
+        'grab_past_flag': 1
+    }
+    # save_setup(setup_data)
+    # flash('Settings updated successfully!')
+    # return redirect(url_for('advanced_setup'))
 @app.route('/link_spotify')
 def link_spotify():
     sp_oauth = create_spotify_oauth()
@@ -64,18 +103,14 @@ def getTracks():
     try:
         token_info = get_token()
     except:
-        print("user not logged in")
+        print("User not logged in")
         return redirect(url_for('index'))
 
     sp = spotipy.Spotify(auth=token_info['access_token'])
 
-    # Using the first playlist from JSON to get the link
     first_playlist = playlist_array[0]
-    fline = first_playlist[1].replace("https://open.spotify.com/playlist/", "")#deletes first part of the link
-    PLAYLISTID = (fline.split("?si")[0]) #cuts off exess info from the link
-    print(PLAYLISTID)
-
-    print("SPOTIFY REQUEST WENT THROUGH!!!! ")
+    fline = first_playlist[1].replace("https://open.spotify.com/playlist/", "")
+    PLAYLISTID = (fline.split("?si")[0])
 
     all_songs = []
     count = 0
@@ -88,12 +123,10 @@ def getTracks():
     
     spotifyRQ1 = str(len(all_songs))
     timestamp = str(datetime.now())
-    print("The amount of songs in the playlist are: " + spotifyRQ1)
-    print("TIMESTAMP: " + timestamp)
-    
+
     open('uri.txt', 'w+').close()
-    print("uri.txt has been reset")
-    spotifyRQ1 = spotifyRQ1 + " SUCCESS Spotify has been linked!"
+
+    spotifyRQ1 += " SUCCESS Spotify has been linked!"
     return render_template('index.html', num_songs=spotifyRQ1, timestamp=timestamp)
 
 @app.route('/close_app', methods=['POST'])
@@ -103,49 +136,16 @@ def close_app():
 
 @app.route('/continue_setup', methods=['POST'])
 def continue_setup():
-    return render_template('setup.html', installed_features=data['installed_features'])
+    return render_template('advanced_setup.html')
 
 @app.route('/advanced_setup', methods=['GET', 'POST'])
 def advanced_setup():
     if request.method == 'POST':
-        data['client_id'] = request.form['client_id']
-        data['client_secret'] = request.form['client_secret']
-        data['discord_token'] = request.form['discord_token']
-        data['playlist_links'] = request.form['playlist_links']
-        data['discord_channels'] = request.form['discord_channels']
-        
-        # Update features based on checkboxes
-        for feature in data['installed_features']:
-            data['installed_features'][feature] = feature in request.form.getlist('features')
-        
-        # Save the updated configuration to setup.json
-        with open('setup.json', 'w') as setupf:
-            json.dump(data, setupf)
-        
-        flash('Setup file updated!')
+        # Add logic to handle advanced setup form inputs if needed
+        flash('Setup updated!')
         return redirect(url_for('advanced_setup'))
-    
-    return render_template('advanced_setup.html', **data)
 
-@app.route('/save_setup', methods=['POST'])
-def save_setup():
-    client_id = request.form['client_id']
-    client_secret = request.form['client_secret']
-    discord_token = request.form['discord_token']
-    playlist_links = request.form['playlist_links']
-    discord_channels = request.form['discord_channels']
-
-    data['client_id'] = client_id
-    data['client_secret'] = client_secret
-    data['discord_token'] = discord_token 
-    data['playlist_links'] = playlist_links
-    data['discord_channels'] = discord_channels
-
-    with open('setup.json', 'w') as setupf:
-        json.dump(data, setupf)
-    
-    flash('Setup file updated!')
-    return redirect(url_for('setup'))
+    return render_template('advanced_setup.html')
 
 def shutdown_server():
     func = request.environ.get('werkzeug.server.shutdown')
@@ -163,13 +163,13 @@ def get_token():
     if is_expried:
         sp_oauth = create_spotify_oauth()
         token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
-        
+
     return token_info
 
 def create_spotify_oauth():
     return SpotifyOAuth(
-    client_id,
-    client_secret,
-    redirect_uri = url_for('redirectPage', _external=True), # Auto gernates this in the url_for http://localhost:5000/callback
-    scope = 'playlist-modify-public user-library-read' )   
-
+        client_id=client_id,
+        client_secret=client_secret,
+        redirect_uri=url_for('redirectPage', _external=True),
+        scope='playlist-modify-public user-library-read'
+    )

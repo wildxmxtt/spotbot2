@@ -8,7 +8,7 @@
 <body>
     <h1>Spotbot2 Setup</h1>
     <h3>Spotify Playlist Info</h3>
-    <p>The amount of songs in the playlist are: {{ num_songs }} </p>
+    <p>The amount of songs in the playlist {{ playlist_name }} are: {{ num_songs }} </p>
 
     <form action="{{ url_for('link_spotify') }}" method="get">
         <button type="submit">Link Spotify</button>
@@ -16,6 +16,10 @@
 
     <form action="{{ url_for('continue_setup') }}" method="post">
         <button type="submit">Continue Setup</button>
+    </form>
+
+    <form action="{{ url_for('advanced_setup') }}" method="get">
+        <button type="submit">Advanced Setup</button>
     </form>
 
     <form action="{{ url_for('close_app') }}" method="post">

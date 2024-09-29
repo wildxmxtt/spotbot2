@@ -16,7 +16,7 @@ import database_tools
 pgrm_signature = "spotbot.py: "
 
 # Get any discord token in the DB
-conn = sqlite3.connect('secrets.db')
+conn = sqlite3.connect(r'databases\secrets.db')
 cur = conn.cursor()
 
 cur.execute('SELECT discord_token FROM setup')
@@ -42,7 +42,7 @@ async def on_ready():
 #This is the help command that lets the user know all of the avaliable commands that can be used 
 @bot.command()
 async def hlp(ctx):
-    setup_info = database_tools.get_setup_info('secrets.db', ctx.message.guild.name)
+    setup_info = database_tools.get_setup_info(r'databases\secrets.db', ctx.message.guild.name)
 
     helpText = ("The commands for this bot go as follows: \n" + 
         "[!]sLink (gives the user the link to the spotify playlist) \n" + 
@@ -63,7 +63,7 @@ async def hlp(ctx):
 #gives the link set in the setup.json file
 @bot.command()
 async def sLink(ctx):
-    playlist_array = database_tools.get_playlist_array('secrets.db')
+    playlist_array = database_tools.get_playlist_array(r'databases\secrets.db')
     
     for playlist in playlist_array:
         if int(playlist[1]) == ctx.channel.id:
@@ -73,7 +73,7 @@ async def sLink(ctx):
 @bot.command()
 async def r(ctx): 
     # Connect to the SQLite Database
-    conn = sqlite3.connect('spotbot.db')
+    conn = sqlite3.connect(r'databases\spotbot.db')
     cur = conn.cursor()
 
     # Get the number of total songs in the playlist
@@ -102,13 +102,13 @@ async def r(ctx):
 # a request command to produce an all time leaderboard stats for the respective discord server 
 @bot.command()
 async def leaderboard(ctx):
-    setup_info = database_tools.get_setup_info('secrets.db', ctx.message.guild.name)
+    setup_info = database_tools.get_setup_info(r'databases\secrets.db', ctx.message.guild.name)
 
     # Check if the leaderboard information is enabled via setup.json
     if setup_info[5] == 0: return False
 
     # Connect to the SQLite Database
-    conn = sqlite3.connect('spotbot.db')
+    conn = sqlite3.connect(r'databases\spotbot.db')
     cur = conn.cursor()
 
     # Get top 10 users and their number of songs added
@@ -132,13 +132,13 @@ async def leaderboard(ctx):
 # a request command to produce a leaderboard with this months stats for the respective discord server
 @bot.command()
 async def thismonth(ctx):
-    setup_info = database_tools.get_setup_info('secrets.db', ctx.message.guild.name)
+    setup_info = database_tools.get_setup_info(r'databases\secrets.db', ctx.message.guild.name)
     
     # Check if the leaderboard information is enabled via setup.json
     if setup_info[4] == 0: return False
 
     # Connect to the SQLite Database
-    conn = sqlite3.connect('spotbot.db')
+    conn = sqlite3.connect(r'databases\spotbot.db')
     cur = conn.cursor()
 
     # Get the current year and month
@@ -170,7 +170,7 @@ async def thismonth(ctx):
 @bot.command()
 async def reactChamp(ctx):
     # Get set up info and playlists
-    setup_info = database_tools.get_setup_info('secrets.db', ctx.message.guild.name)
+    setup_info = database_tools.get_setup_info(r'databases\secrets.db', ctx.message.guild.name)
 
     # Check if the leaderboard information is enabled via setup.json
     if setup_info[4] == 0: return False
@@ -179,7 +179,7 @@ async def reactChamp(ctx):
     await ctx.send(f"Grabbing messages - this may take a while...")
 
     # Connect to SQLite Database
-    conn = sqlite3.connect('spotbot.db') # create or connect to the database
+    conn = sqlite3.connect(r'databases\spotbot.db') # create or connect to the database
     cur = conn.cursor()
 
     current_date = datetime.now()
@@ -244,8 +244,8 @@ async def reactChamp(ctx):
 @bot.command()
 async def localreactChamp(ctx):
     # Get set up info and playlists
-    setup_info = database_tools.get_setup_info('secrets.db', ctx.message.guild.name)
-    playlist_array = database_tools.get_playlist_array('secrets.db')
+    setup_info = database_tools.get_setup_info(r'databases\secrets.db', ctx.message.guild.name)
+    playlist_array = database_tools.get_playlist_array(r'databases\secrets.db')
 
     # Check if the leaderboard information is enabled via setup.json
     if setup_info[4] == 0: return False
@@ -256,14 +256,14 @@ async def localreactChamp(ctx):
             await ctx.send(f"Grabbing messages - this may take a while...")
 
             # Connect to SQLite Database
-            conn = sqlite3.connect('spotbot.db')
+            conn = sqlite3.connect(r'databases\spotbot.db')
             cur = conn.cursor()
 
             current_date = datetime.now()
             current_year = current_date.year
             current_month = current_date.month
 
-            playlist_link = database_tools.get_playlist_link('secrets.db', playlist[1])
+            playlist_link = database_tools.get_playlist_link(r'databases\secrets.db', playlist[1])
             playlist_ID = getSpotifyID(playlist_link[0])
 
             # Get top 10 users and their number of songs added for the current month for the specified playlist
@@ -381,7 +381,7 @@ async def grabPast(ctx):
         await ctx.reply("Grabbing songs now please wait until FINISHED is sent")                
         await ctx.send("Grabbing & Flitering Past Messages (this could take a while).....")
 
-        playlist_array = database_tools.get_playlist_array('secrets.db')
+        playlist_array = database_tools.get_playlist_array(r'databases\secrets.db')
         # 0 index is URL, 1 index is discord channelID
 
         # Loop through available playlists
@@ -415,8 +415,8 @@ async def grabPast(ctx):
 @bot.event
 async def on_message(msg):
     # Get the set up info and playlist array
-    setup_info = database_tools.get_setup_info('secrets.db', msg.guild.name)
-    playlist_array = database_tools.get_playlist_array('secrets.db')
+    setup_info = database_tools.get_setup_info(r'databases\secrets.db', msg.guild.name)
+    playlist_array = database_tools.get_playlist_array(r'databases\secrets.db')
     
 
     # Loop through available playlists
@@ -453,7 +453,7 @@ async def on_message(msg):
                             await msg.reply("WARNING GRAB PAST FLAG IS STILL ZERO, IF THERE ARE NO PAST SONGS YOU NEED TO GRAB. SET THE GRAB PAST FLAG TO ZERO IN setup.json AND RESTART spotbot.py. THIS WILL CAUSE ERRORS ELSEWISE")
                         
                         # Check for acheivements (connect to db, get song count)
-                        conn = sqlite3.connect('spotbot.db')
+                        conn = sqlite3.connect(r'databases\spotbot.db')
                         cur = conn.cursor()
 
                         cur.execute("SELECT COUNT(*) FROM songs WHERE playlist_ID = ?", (getSpotifyID(playlist_link),))
@@ -487,7 +487,7 @@ async def on_message(msg):
 
 @bot.command()
 async def waves(ctx, arg):
-    playlist_array = database_tools.get_playlist_array('secrets.db')
+    playlist_array = database_tools.get_playlist_array(r'databases\secrets.db')
     # 0 index is URL, 1 index is discord channelID
 
     for playlist in playlist_array:
@@ -545,7 +545,7 @@ def dupCheck(msg, playlist_link):
     string1 = msg.content
     
     # opening a text files (new)
-    conn = sqlite3.connect('spotbot.db')
+    conn = sqlite3.connect(r'databases\spotbot.db')
     cur = conn.cursor()
 
     # Separate the string supplied to just the spotify ID
@@ -598,7 +598,7 @@ def uritxt(link):
         print(pgrm_signature + "Writting to uri.txt.....: \n")
 
         # connect to the database
-        conn = sqlite3.connect('spotbot.db')
+        conn = sqlite3.connect(r'databases\spotbot.db')
         cur = conn.cursor()
 
         # Select all spotify IDs
@@ -693,7 +693,7 @@ def getSpotifyID(playlist_link):
     return playlist_link.split('/')[-1].split('?')[0]
 
 # Initialize the database if not created yet
-database_tools.initialize_milestones("spotbot.db", database_tools.get_playlist_array('secrets.db'))
+database_tools.initialize_milestones(r'databases\spotbot.db', database_tools.get_playlist_array(r'databases\secrets.db'))
 
 # Refresh the token upon startup
 playlist_update.startup_token_refresh()

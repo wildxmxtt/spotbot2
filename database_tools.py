@@ -57,10 +57,7 @@ def get_secret_setup_info_dict(file):
     setup_info_dict = {
         'client_id': 0,
         'client_secret': 1,
-        'discord_token': 2,
-        'grab_past_flag': 3,
-        'leaderboards_flag': 4,
-        'server_name': 5                
+        'discord_token': 2            
     }
 
     # Connect to database
@@ -93,7 +90,7 @@ def get_pub_setup_info_dict(file):
         'server_name': 5                
     }
 
-    # Connect to database
+    # Connect to database 
     conn = sqlite3.connect(file)
     cur = conn.cursor()
 
@@ -135,6 +132,57 @@ def get_playlist_link(file, chat_ID):
 
     return playlist_link
 
+
+def save_secrets_to_db(client_id, client_secret, discord_token, playlist_links, discord_channels, SECRET_DATABASE=r'databases\secrets.db'):
+    conn = sqlite3.connect(SECRET_DATABASE)
+    cur = conn.cursor()
+    
+    # Insert or update the setup information in the database
+    cur.execute("""
+        INSERT OR REPLACE INTO setup (client_id, client_secret, discord_token) 
+        VALUES (?, ?, ?)
+    """, (client_id, client_secret, discord_token))
+    
+    conn.commit()
+    #need to iterate through playlist_links and discord_channels make a robust system to accosicate discord channel to playlist link
+    cur.execute("""
+        INSERT OR REPLACE INTO chats (playlist_link, discord_channel) 
+        VALUES (?, ?)
+    """, (playlist_links, discord_channels))
+
+    conn.commit()
+    conn.close()
+    print("Added chats config toi db")
+
+def save_spotbot_chats_config_to_db(playlist_links, discord_channels,SECRET_DATABASE=r'databases\secrets.db'):
+    conn = sqlite3.connect(SECRET_DATABASE)
+    cur = conn.cursor()
+    
+    # Insert or update the setup information in the database
+    cur.execute("""
+        INSERT OR REPLACE INTO setup (client_id, client_secret, discord_token, grab_past_flag) 
+        VALUES (?, ?, ?, ?, ?)
+    """, (playlist_links, discord_channels))
+    
+    conn.commit()
+    conn.close()
+    print("Added chats config toi db")
+
+def retrieve_secrets_info(SECRET_DATABASE=r'databases\secrets.db'):
+    conn = sqlite3.connect(SECRET_DATABASE)
+    cur = conn.cursor()
+    cur.execute("SELECT client_id, client_secret, discord_token, grab_past_flag FROM setup WHERE 1 = 1")
+    secrets_info = cur.fetchone()
+    conn.close()
+    return secrets_info
+
+def get_spotbot_chats_config_info(SECRET_DATABASE=r'databases\secrets.db'):
+    conn = sqlite3.connect(SECRET_DATABASE)
+    cur = conn.cursor()
+    cur.execute("SELECT playlist_link, discord_channel FROM chats WHERE 1 = 1")
+    chats_info = cur.fetchone()
+    conn.close()
+    return chats_info
 # secret_setup_info = get_secret_setup_info_dict('spotbot.db')
 # secret_setup_info = get_setup_info(r'databases\secrets.db')
 
@@ -142,3 +190,5 @@ def get_playlist_link(file, chat_ID):
 # secret_setup_info = get_secret_setup_info_dict(r'databases\secrets.db')
 # client_id = secret_setup_info['client_id']
 # client_secret = secret_setup_info['client_secret']
+
+# get_secret_setup_info_dict(r'databases\secrets.db')

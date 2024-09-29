@@ -13,9 +13,9 @@ app.config['SESSION_COOKIE_NAME'] = 'Matts_Cookie'
 TOKEN_INFO = "token_info"
 
 playlist_array = []
-
+SECRET_DATABASE = r'databases\secrets.db'
 # Sets up our secret information into the application from secrets.db
-secret_setup_info = dbt.get_secret_setup_info_dict(r'databases\secrets.db')
+secret_setup_info = dbt.get_secret_setup_info_dict(SECRET_DATABASE)
 if secret_setup_info is not None:
     client_id = secret_setup_info['client_id']
     client_secret = secret_setup_info['client_secret']
@@ -52,10 +52,40 @@ def view_database(db_name):
     selected_table = None
 
     if request.method == 'POST':
-        selected_table = request.form['table']
-        cursor.execute(f"PRAGMA table_info({selected_table})")
-        column_names = [info[1] for info in cursor.fetchall()]
-        cursor.execute(f'SELECT * FROM {selected_table}')
+        clear_table_input = request.form.get('clear_table_input')
+        if clear_table_input == 'DELETE':
+            # Get the selected table from the form data
+            selected_table = request.form.get('table')
+
+            if selected_table:
+                # Clear the table
+                conn = sqlite3.connect(db_path)
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM {}".format(selected_table))
+                conn.commit()
+                conn.close()
+
+                # Redirect to the same page to refresh the table
+                return redirect(url_for('view_database', db_name=db_name))
+            else:
+                # Handle the case where no table is selected
+                flash("Please select a table to delete from.")
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    tables = [table[0] for table in cursor.fetchall()]
+
+    table_data = None
+    column_names = None
+    selected_table = None
+
+    if request.form.get('table'):
+        selected_table = request.form.get('table')
+
+        cursor.execute("SELECT * FROM {}".format(selected_table))
+        column_names = [description[0] for description in cursor.description]
         table_data = cursor.fetchall()
 
     conn.close()
@@ -69,6 +99,150 @@ def view_database(db_name):
         data=table_data, 
         column_names=column_names
     )
+
+
+@app.route('/edit_chats', methods=['POST'])
+def edit_chats():
+    conn = sqlite3.connect(SECRET_DATABASE)
+    cursor = conn.cursor()
+
+    chats_data = request.form.getlist('chats_data')  # Get all the inputs from the form
+    num_fields = 3  # Number of fields per row: id, playlist_link, discord_channel
+    chat_entries = [chats_data[i:i + num_fields] for i in range(0, len(chats_data), num_fields)]
+
+    for entry in chat_entries:
+        chat_id, playlist_link, discord_channel = entry
+        
+        # Check if it's an existing row or a new row (new rows will have an empty chat_id)
+        if chat_id:
+            cursor.execute('''UPDATE chats
+                              SET playlist_link = ?, discord_channel = ?
+                              WHERE chat_id = ?''', (playlist_link, discord_channel, chat_id))
+        else:
+            # Insert new row
+            cursor.execute('''INSERT INTO chats (playlist_link, discord_channel)
+                              VALUES (?, ?)''', (playlist_link, discord_channel))
+
+    conn.commit()
+    conn.close()
+    
+    flash("Chats configuration updated successfully!")
+    return redirect(url_for('advanced_setup'))
+
+@app.route('/update_chats', methods=['POST'])
+def update_chats():
+    conn = sqlite3.connect(SECRET_DATABASE)
+    cursor = conn.cursor()
+
+    # Retrieve all column names from the chats table
+    cursor.execute("PRAGMA table_info(chats)")
+    column_info = cursor.fetchall()
+    column_names = [info[1] for info in column_info]  # Extract column names
+    
+    # Retrieve all rows from the chats table
+    cursor.execute("SELECT * FROM chats")
+    chats = cursor.fetchall()
+
+    # Loop through each row in the table
+    for row_index, row in enumerate(chats):
+        # Check if the user has typed DELETE for the row
+        delete_value = request.form.get(f"delete_row_{row_index}")
+        if delete_value == "DELETE":
+            # Delete the row if DELETE is typed
+            cursor.execute("DELETE FROM chats WHERE chat_id = ?", (row[0],))  # Assuming chat_id is in the first column
+            continue
+        
+        # Prepare to update the row with new values from the form
+        updated_values = []
+        for column_index, column_name in enumerate(column_names):
+            # Skip the first column (assuming it's the chat_id and should not be updated)
+            if column_name == "chat_id":
+                continue
+            updated_value = request.form.get(f"row_{row_index}_{column_index}")
+            updated_values.append(updated_value)
+        
+        # Dynamically create the SQL update query using the column names
+        set_clause = ", ".join([f"{column} = ?" for column in column_names[1:]])  # Skip 'chat_id'
+        cursor.execute(f"""
+            UPDATE chats
+            SET {set_clause}
+            WHERE chat_id = ?
+        """, (*updated_values, row[0]))  # Assuming 'chat_id' is in the first column
+
+    conn.commit()
+    conn.close()
+    
+    flash("Chats updated successfully!")
+    return redirect(url_for('advanced_setup'))
+
+
+
+@app.route('/add_chat_row', methods=['GET', 'POST'])
+def add_chat_row():
+    conn = sqlite3.connect(SECRET_DATABASE)
+    cursor = conn.cursor()
+    
+    # Insert a new row with default values (e.g., empty strings or appropriate defaults)
+    cursor.execute("INSERT INTO chats (column1, column2, column3, ...) VALUES (?, ?, ?, ...)", ("", "", "", ...))
+    conn.commit()
+    conn.close()
+
+    flash("New row added successfully!")
+    return redirect(url_for('advanced_setup'))
+
+@app.route('/advanced_setup', methods=['GET', 'POST'])
+def advanced_setup():
+    conn = sqlite3.connect(SECRET_DATABASE)
+    cursor = conn.cursor()
+    
+    # Fetch chats table data
+    cursor.execute("SELECT * FROM chats")
+    chats = cursor.fetchall()
+
+    # Fetch column names for rendering table headers
+    cursor.execute("PRAGMA table_info(chats)")
+    column_names = [info[1] for info in cursor.fetchall()]  # Extract column names
+    
+    conn.close()
+
+    secrets_info = dbt.retrieve_secrets_info(SECRET_DATABASE)
+    chats_info = dbt.get_spotbot_chats_config_info(SECRET_DATABASE)
+
+    secrets_info = secrets_info or ('', '', '', '')
+    chats_info = chats_info or ('', '')
+
+    client_id, client_secret, discord_token, grab_past_flag = secrets_info
+    playlist_links, discord_channels = chats_info
+
+    return render_template(
+        'advanced_setup.html', 
+        client_id=client_id, 
+        client_secret=client_secret, 
+        discord_token=discord_token, 
+        playlist_links=playlist_links, 
+        discord_channels=discord_channels, 
+        installed_features=installed_features,
+        chats=chats,  # Pass chats data to template
+        column_names=column_names  # Pass column names to template
+    )
+
+@app.route('/save_setup', methods=['POST'])
+def save_setup():
+    # Your logic to save setup information
+    # Example:
+    client_id = request.form.get('client_id')
+    client_secret = request.form.get('client_secret')
+    discord_token = request.form.get('discord_token')
+    playlist_links = request.form.get('grab_past_flag')
+    discord_channels = request.form.get('discord_channels')
+    
+    # Save these details to the database, probably using the functions in database_tools.py
+    dbt.save_secrets_to_db(client_id, client_secret, discord_token, playlist_links, discord_channels)
+    
+    flash("Secret Setup saved successfully!")
+    return redirect(url_for('advanced_setup'))  # Redirect back to advanced_setup or another page
+
+
 @app.route('/save_advanced_setup', methods=['POST'])
 def save_advanced_setup():
     setup_data = {
@@ -100,17 +274,22 @@ def redirectPage():
 
 @app.route('/getTracks')
 def getTracks():
+    secret_chat_info = dbt.get_playlist_array(SECRET_DATABASE)
+    file = '.cache'
+    if(os.path.exists(file)):
+        #os.remove(file)
+        print("WARNING: cache file found, this can cause token login issues, please delete & use private/incoginto browser IF possible, you are expirencing SPOTIFY LOGIN issues!")
     try:
         token_info = get_token()
     except:
         print("User not logged in")
         return redirect(url_for('index'))
-
+    
+    playlist_link = str(secret_chat_info[0][0]) 
     sp = spotipy.Spotify(auth=token_info['access_token'])
-
-    first_playlist = playlist_array[0]
-    fline = first_playlist[1].replace("https://open.spotify.com/playlist/", "")
+    fline = playlist_link.replace("https://open.spotify.com/playlist/", "")
     PLAYLISTID = (fline.split("?si")[0])
+    print("SPOTIFY REQUEST WENT THROUGH!!!! ")
 
     all_songs = []
     count = 0
@@ -127,7 +306,7 @@ def getTracks():
     open('uri.txt', 'w+').close()
 
     spotifyRQ1 += " SUCCESS Spotify has been linked!"
-    return render_template('index.html', num_songs=spotifyRQ1, timestamp=timestamp)
+    return render_template('index.html', num_songs=spotifyRQ1, timestamp=timestamp, playlist_name = playlist_link )
 
 @app.route('/close_app', methods=['POST'])
 def close_app():
@@ -138,14 +317,14 @@ def close_app():
 def continue_setup():
     return render_template('advanced_setup.html')
 
-@app.route('/advanced_setup', methods=['GET', 'POST'])
-def advanced_setup():
-    if request.method == 'POST':
-        # Add logic to handle advanced setup form inputs if needed
-        flash('Setup updated!')
-        return redirect(url_for('advanced_setup'))
+# @app.route('/advanced_setup', methods=['GET', 'POST'])
+# def advanced_setup():
+#     if request.method == 'POST':
+#         # Add logic to handle advanced setup form inputs if needed
+#         flash('Setup updated!')
+#         return redirect(url_for('advanced_setup'))
 
-    return render_template('advanced_setup.html')
+#     return render_template('advanced_setup.html')
 
 def shutdown_server():
     func = request.environ.get('werkzeug.server.shutdown')
@@ -167,6 +346,10 @@ def get_token():
     return token_info
 
 def create_spotify_oauth():
+    secret_setup_info = dbt.get_secret_setup_info_dict(SECRET_DATABASE)
+    if secret_setup_info is not None:
+        client_id = secret_setup_info['client_id']
+        client_secret = secret_setup_info['client_secret']
     return SpotifyOAuth(
         client_id=client_id,
         client_secret=client_secret,

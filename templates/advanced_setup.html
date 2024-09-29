@@ -19,6 +19,7 @@
             </script>
         {% endif %}
     {% endwith %}
+
     <form action="{{ url_for('advanced_setup') }}" method="post">
         <label for="client_id">Spotify Client ID:</label>
         <input type="text" id="client_id" name="client_id" value="{{ client_id }}" required><br><br>
@@ -29,19 +30,12 @@
         <label for="discord_token">Discord Bot Token:</label>
         <input type="text" id="discord_token" name="discord_token" value="{{ discord_token }}" required><br><br>
         
-        <label for="playlist_links">Spotify Playlist(s) Links (comma-separated):</label>
-        <input type="text" id="playlist_links" name="playlist_links" value="{{ playlist_links }}" required><br><br>
-        
-        <label for="discord_channels">Discord Channel ID(s) (comma-separated):</label>
-        <input type="text" id="discord_channels" name="discord_channels" value="{{ discord_channels }}" required><br><br>
         <br><br>
         <h3>Descriptions</h3> 
         <label>Spotify Client ID: Public Identifier for Spotify Application</label> <br><br>
         <label>Spotify Client Secret: Secret Identifier for Spotify Application, your access to the application</label> <br><br>
         <label>Discord Token: Token to run your Discord bot running Spotbot2 code (Spotbot.py)</label>  <br><br>
-        <label>Playlist Links: Your Spotify Playlist Links where you want Spotbot2 to point to</label> <br><br>
-        <label>Discord Channels: Which Discord channels you want Spotbot2 to read</label>  <br><br> <br><br>
-
+        
         <h3>Extra Features</h3>
         <p>Select features to install:</p>
         {% for feature, installed in installed_features.items() %}
@@ -51,13 +45,60 @@
                 {{ feature }}
             </label><br>
         {% endfor %}
-        
-        
         <br>
         <button type="submit">Save/Update</button>
     </form>
+
+    <br><br>
+
+    <h3>Chats Configuration</h3>
+    <form action="{{ url_for('update_chats') }}" method="post">
+        <table border="1">
+            <thead>
+                <tr>
+                    {% for column in column_names %}
+                        <th>{{ column }}</th>
+                    {% endfor %}
+                    <th>Delete</th> <!-- Add Delete header column -->
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in chats %}
+                    {% set row_index = loop.index0 %}
+                    <tr>
+                        {% for column in row %}
+                            <td><input type="text" name="row_{{ row_index }}_{{ loop.index0 }}" value="{{ column }}"></td>
+                        {% endfor %}
+                        <td>
+                            <!-- Delete text box that requires typing DELETE -->
+                            <input type="text" name="delete_row_{{ row_index }}" placeholder="Type DELETE">
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <br>
+        <button type="submit">Update</button>
+    </form>
+    
+    <!-- Form for adding a new row -->
+    <form action="{{ url_for('add_chat_row') }}" method="post">
+        <button type="submit">+</button>
+    </form>
+    
+    
+    <!-- Form for adding a new row -->
+    <form action="{{ url_for('add_chat_row') }}" method="post">
+        <button type="submit">+</button>
+    </form>
+    
+    
+    <!-- Form for adding a new row -->
+    <form action="{{ url_for('add_chat_row') }}" method="post">
+        <button type="submit">+</button>
+    </form>
+
     <br>
     <button onclick="window.history.back()">Previous</button>
-    <br><br>
 </body>
 </html>

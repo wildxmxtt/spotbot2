@@ -128,7 +128,7 @@ def get_spotify_json():
     return data, TOKEN, refresh_token, expires_at
 
 def get_spotify_api_object(now, data, TOKEN, refresh_token, expires_at):
-    is_expried = expires_at - now < 60 #checks to see if the token is expired, is a boolean variable
+    is_expried = expires_at - now > 60 #checks to see if the token is expired, is a boolean variable
 
     time_left = expires_at - now #finds out how much time is left on the token
 

@@ -415,7 +415,7 @@ async def grabPast(ctx):
 @bot.event
 async def on_message(msg):
     # Get the set up info and playlist array
-    setup_info = database_tools.get_setup_info('secrets.db', msg.guild.name)
+    setup_info = database_tools.get_setup_info('secrets.db')
     playlist_array = database_tools.get_playlist_array('secrets.db')
     
 

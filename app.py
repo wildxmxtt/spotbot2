@@ -183,7 +183,7 @@ def add_chat_row():
     cursor = conn.cursor()
     
     # Insert a new row with default values (e.g., empty strings or appropriate defaults)
-    cursor.execute("INSERT INTO chats (column1, column2, column3, ...) VALUES (?, ?, ?, ...)", ("", "", "", ...))
+    cursor.execute("INSERT INTO chats (playlist_link, discord_channel) VALUES (?, ?)", ("", ""))
     conn.commit()
     conn.close()
 

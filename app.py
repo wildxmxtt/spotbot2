@@ -192,38 +192,22 @@ def add_chat_row():
 
 @app.route('/advanced_setup', methods=['GET', 'POST'])
 def advanced_setup():
-    conn = sqlite3.connect(SECRET_DATABASE)
-    cursor = conn.cursor()
+    secret_setup_info = dbt.get_secret_setup_info_dict(SECRET_DATABASE)
+    client_id = secret_setup_info['client_id']
+    client_secret = secret_setup_info['client_secret']
     
-    # Fetch chats table data
-    cursor.execute("SELECT * FROM chats")
-    chats = cursor.fetchall()
-
-    # Fetch column names for rendering table headers
-    cursor.execute("PRAGMA table_info(chats)")
-    column_names = [info[1] for info in cursor.fetchall()]  # Extract column names
-    
-    conn.close()
-
-    secrets_info = dbt.retrieve_secrets_info(SECRET_DATABASE)
-    chats_info = dbt.get_spotbot_chats_config_info(SECRET_DATABASE)
-
-    secrets_info = secrets_info or ('', '', '', '')
-    chats_info = chats_info or ('', '')
-
-    client_id, client_secret, discord_token, grab_past_flag = secrets_info
-    playlist_links, discord_channels = chats_info
+    chats_info =dbt.update_spotbot_chat(SECRET_DATABASE)
 
     return render_template(
         'advanced_setup.html', 
         client_id=client_id, 
         client_secret=client_secret, 
-        discord_token=discord_token, 
-        playlist_links=playlist_links, 
-        discord_channels=discord_channels, 
+        discord_token=chats_info[0]['discord_token'],
+        playlist_links=chats_info[1]['playlist_links'], 
+        discord_channels=chats_info[0]['discord_channels'], 
         installed_features=installed_features,
-        chats=chats,  # Pass chats data to template
-        column_names=column_names  # Pass column names to template
+        chats=chats_info[3],  # Pass chats data to template
+        column_names=chats_info[2]  # Pass column names to template
     )
 
 @app.route('/save_setup', methods=['POST'])
@@ -245,17 +229,15 @@ def save_setup():
 
 @app.route('/save_advanced_setup', methods=['POST'])
 def save_advanced_setup():
-    setup_data = {
-        'client_id': request.form['client_id'],
-        'client_secret': request.form['client_secret'],
-        'discord_token': request.form['discord_token'],
-        'playlist_link': request.form['playlist_links'],
-        'discord_channel': request.form['discord_channels'],
-        'grab_past_flag': 1
-    }
-    # save_setup(setup_data)
-    # flash('Settings updated successfully!')
-    # return redirect(url_for('advanced_setup'))
+    client_id = request.form.get('client_id')
+    client_secret = request.form.get('client_secret')
+    discord_token = request.form.get('discord_token')
+    
+    # Save these details to the database, probably using the functions in database_tools.py
+    dbt.save_secrets_to_db(client_id, client_secret, discord_token, tokensOnlyFlag=True)
+
+    flash('Settings updated successfully!')
+    return redirect(url_for('advanced_setup'))
 @app.route('/link_spotify')
 def link_spotify():
     sp_oauth = create_spotify_oauth()
@@ -315,7 +297,21 @@ def close_app():
 
 @app.route('/continue_setup', methods=['POST'])
 def continue_setup():
-    return render_template('advanced_setup.html')
+    chats_info =dbt.update_spotbot_chat(SECRET_DATABASE)
+
+    return render_template(
+        'setup.html', 
+        client_id=client_id, 
+        client_secret=client_secret, 
+        discord_token=chats_info[0]['discord_token'],
+        playlist_links=chats_info[1]['playlist_links'], 
+        discord_channels=chats_info[0]['discord_channels'], 
+        installed_features=installed_features,
+        chats=chats_info[3],  # Pass chats data to template
+        column_names=chats_info[2]  # Pass column names to template
+    )
+
+    #return render_template('setup.html', installed_features=installed_features)
 
 # @app.route('/advanced_setup', methods=['GET', 'POST'])
 # def advanced_setup():

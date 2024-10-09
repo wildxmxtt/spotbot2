@@ -23,7 +23,7 @@
         <button type="submit">Advanced Setup Page</button>
     </form>
     
-    <!-- <form action="{{ url_for('save_setup') }}" method="post">
+    <form action="{{ url_for('save_setup') }}" method="post">
         <p>#1: Spotify Setup </p>
         <ul>Please go to: <a href="https://developer.spotify.com/dashboard">Spotify Developer Webpage</a></ul>
         <ul>You need to click login at the top right hand corner of the page </ul>
@@ -45,10 +45,10 @@
             <li>Then read and agree with the dev terms of service, and then click save</li>
             <li>Next after clicking save, click on settings</li>
             <li>Copy the Client ID & copy and paste it here:</li>
-            <input type="text" id="client_id" name="client_id" required><br><br>
+            <input type="text" id="client_id" name="client_id" value="{{ client_id }}" required><br><br>
             <li>View the Client Secret & copy and paste it here:</li>
-            <input type="text" id="client_secret" name="client_secret" required><br><br>
-        </ol> -->
+            <input type="text" id="client_secret" name="client_secret" value="{{ client_secret }}" required><br><br>
+        </ol>
 
         <p>#2: Discord Setup </p>
         <ul>Please go to: <a href="https://discord.com/developers">Discord Developer Webpage</a></ul>
@@ -79,7 +79,7 @@
         <li>Turn on Server Memebers Intent</li>
         <li>Turn on Message Content Intent</li>
         <li>Press reset access token and paste that access token in here:</li>
-        <input type="text" id="discord_token" name="discord_token" required><br><br>
+        <input type="text" id="discord_token" name="discord_token" value="{{ discord_token }}" required><br><br>
 
         <h3>Customize your Spotbot Install</h3>
         <p>Select features to install:</p>
@@ -91,15 +91,48 @@
             </label><br>
         {% endfor %}
 
-        <li>Press Place your Spotify Links that you want spotbot to view (comma-separated):</li>
-        <input type="text" id="playlist_links" name="playlist_links" required><br><br>
-
+        <li>Place your Spotify Links that you want spotbot to view in the playlist_link column and discord_channel bot to read.</li>
+        <li>You point your playslist link at a channel(s) you want the bot to insert songs into</li>
+        
+        <h3>Getting Discord Chat ID's</h3>
         <li>Go to your discord settings and turn on developer mode in advanced</li>
         <li>Then grab your channel ID's you want spotbot to view by right clicking on the channel then getting the ID</li>
-        <li>Press Place your Discord Channels that you want spotbot to view (comma-separated):</li>
-        <input type="text" id="discord_channels" name="discord_channels" value="{{ discord_channels }}" required><br><br>
 
-        <button type="submit">Save</button>
+        <h3>Chats Configuration</h3>
+        <form action="{{ url_for('update_chats') }}" method="post">
+            <table border="1">
+                <thead>
+                    <tr>
+                        {% for column in column_names %}
+                            <th>{{ column }}</th>
+                        {% endfor %}
+                        <th>Delete</th> <!-- Add Delete header column -->
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in chats %}
+                        {% set row_index = loop.index0 %}
+                        <tr>
+                            {% for column in row %}
+                                <td><input type="text" name="row_{{ row_index }}_{{ loop.index0 }}" value="{{ column }}"></td>
+                            {% endfor %}
+                            <td>
+                                <!-- Delete text box that requires typing DELETE -->
+                                <input type="text" name="delete_row_{{ row_index }}" placeholder="Type DELETE">
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <br>
+            <button type="submit">Update</button>
+        </form>
+        
+        <!-- Form for adding a new row
+        <form action="{{ url_for('add_chat_row') }}" method="post">
+            <button type="submit">+ Add new row +</button>
+        </form> -->
+        
     </form>
 </body>
 </html>

@@ -20,7 +20,7 @@
         {% endif %}
     {% endwith %}
 
-    <form action="{{ url_for('advanced_setup') }}" method="post">
+    <form action="{{ url_for('save_advanced_setup') }}" method="post">
         <label for="client_id">Spotify Client ID:</label>
         <input type="text" id="client_id" name="client_id" value="{{ client_id }}" required><br><br>
         
@@ -46,6 +46,7 @@
             </label><br>
         {% endfor %}
         <br>
+        <h4>This Submit button below will save Spotify Client ID, Spotify Client Secret, and the Discord Bot Token</h4>    
         <button type="submit">Save/Update</button>
     </form>
 
@@ -78,6 +79,7 @@
             </tbody>
         </table>
         <br>
+        <h4>This Update button below will update the chats table with your Playlist Links & Discrod Channels</h4>    
         <button type="submit">Update</button>
     </form>
     

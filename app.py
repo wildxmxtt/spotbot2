@@ -3,6 +3,7 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import time
 import json
+import database_tools
 from datetime import datetime
 from spotipy.oauth2 import SpotifyClientCredentials
 
@@ -18,23 +19,6 @@ app.config['SESSION_COOKIE_NAME'] = 'Matts_Cookie'
 TOKEN_INFO = "token_info"
 
 playlist_array = []
-
-#gets info from setup file
-with open('setup.json', 'r') as setupf:
-    data = json.load(setupf)
-    client_id = (data['client_id'])
-    client_secret = (data['client_secret'])
-    playlists = (data['playlists'])
-
-    for playlist in playlists:
-        # Extract playlist attributes
-        playlist_name = playlist['playlist_name']
-        playlist_link = playlist['playlist_link']
-        discord_channel = playlist['discord_channel']
-        
-        # Add to playlist array
-        playlist_array.append([playlist_name, playlist_link, discord_channel])
-
 
 #do this function above twice
 
@@ -121,9 +105,11 @@ def get_token():
 
 #creates an oAuth object
 def create_spotify_oauth():
+    setupInfo = database_tools.get_setup_info("secrets.db")
+
     return SpotifyOAuth(
-    client_id,
-    client_secret,
+    setupInfo[0], # client id
+    setupInfo[1], # client secret
     redirect_uri = url_for('redirectPage', _external=True), # Auto gernates this in the url_for http://localhost:5000/callback
     scope = 'playlist-modify-public user-library-read' )   
 

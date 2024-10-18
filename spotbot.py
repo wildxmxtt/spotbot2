@@ -583,17 +583,14 @@ def dupCheck(msg, playlist_link):
     conn.close()
 
 def uritxt(link):
-    #opens up the setup.json file
-    with open("setup.json", 'r') as setupf:
-        data = json.load(setupf)
-        grab_past_flag = (data['grab_past_flag']) #this will check if the grab_past_flag has been updated
+    setup_info = database_tools.get_setup_info("secrets.db")
 
     print(pgrm_signature + "Writting to uri.txt..... \n")
     
     # Ensure the link is computed as a str
     song = str(link)
 
-    if(grab_past_flag == 0):
+    if(setup_info[3] == 0): # grab past flag
         # new code
         print("WARNING GRAB PAST FLAG IS SET TO ZERO, MAKE SURE THIS IS SET TO 1 IF YOU DONT HAVE ANY SONGS YOU NEED TO GET FROM THE PAST")
         print(pgrm_signature + "Writting to uri.txt.....: \n")
@@ -695,6 +692,9 @@ def getSpotifyID(playlist_link):
 
 # Initialize the database if not created yet
 database_tools.initialize_milestones("spotbot.db", database_tools.get_playlist_array('secrets.db'))
+
+# Creates/updates spotify.json upon startup
+playlist_update.update_spotify_json()
 
 # Refresh the token upon startup
 playlist_update.startup_token_refresh()

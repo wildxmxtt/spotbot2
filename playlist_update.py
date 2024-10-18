@@ -13,20 +13,7 @@ import database_tools
 pgrm_signature = "playlist_update.py: "
 
 def sendOff(playlist_link):
-    # pgrm_signature = "playlist_update.py: "
-
-    open('spotify.json', 'w+').close() #clears old token info if there is any
-
-    file1 = open("spotify.json", "a") #prepares file to be written to 
-
-    file2 = open(".cache", "r+")#reads the cached file 
-    rline2 = file2.readlines()
-    for line in rline2:
-        content = line
-
-        file1.write(content)#writes the content into the json file
-        
-    file1.close()
+    update_spotify_json()
 
     data, TOKEN, refresh_token, expires_at = get_spotify_json()
         
@@ -166,7 +153,20 @@ def get_track_name_and_artist(trackID):
 
     return f"{track['name']} - {artists[0]['name']}"
 
+# Reads information from .cache file and stores it in spotify.json
+def update_spotify_json():
+    open('spotify.json', 'w+').close() #clears old token info if there is any
 
+    file1 = open("spotify.json", "a") #prepares file to be written to 
+
+    file2 = open(".cache", "r+")#reads the cached file 
+    rline2 = file2.readlines()
+    for line in rline2:
+        content = line
+
+        file1.write(content)#writes the content into the json file
+        
+    file1.close()
 
 # Token refresh method for startup
 def startup_token_refresh():

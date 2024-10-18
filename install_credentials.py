@@ -51,7 +51,7 @@ def main():
         channel = input("What discord channel should be linked to this playlist: ")
 
         cursor.execute('''
-        INSERT INT chats (playlist_link, discord_channel)
+        INSERT INTO chats (playlist_link, discord_channel)
         VALUES (?,?)
         ''', (playlist_link, channel))
 

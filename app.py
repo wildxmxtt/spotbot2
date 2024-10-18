@@ -53,7 +53,7 @@ def getTracks():
     sp = spotipy.Spotify(auth=token_info['access_token'])
 
     # Using the first playlist from JSON to get the link
-    playlist_array = database_tools.get_playlist_array("spotbot.db")
+    playlist_array = database_tools.get_playlist_array("secrets.db")
     first_playlist = playlist_array[0]
     print(f"\n\nDEBUG\n\nfirst playlist: {first_playlist}\n\n")
     fline = first_playlist[0].replace("https://open.spotify.com/playlist/", "")#deletes first part of the link

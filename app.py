@@ -101,143 +101,143 @@ def view_database(db_name):
     )
 
 
-# @app.route('/edit_chats', methods=['POST'])
-# def edit_chats():
-#     conn = sqlite3.connect(SECRET_DATABASE)
-#     cursor = conn.cursor()
+@app.route('/edit_chats', methods=['POST'])
+def edit_chats():
+    conn = sqlite3.connect(SECRET_DATABASE)
+    cursor = conn.cursor()
 
-#     chats_data = request.form.getlist('chats_data')  # Get all the inputs from the form
-#     num_fields = 3  # Number of fields per row: id, playlist_link, discord_channel
-#     chat_entries = [chats_data[i:i + num_fields] for i in range(0, len(chats_data), num_fields)]
+    chats_data = request.form.getlist('chats_data')  # Get all the inputs from the form
+    num_fields = 3  # Number of fields per row: id, playlist_link, discord_channel
+    chat_entries = [chats_data[i:i + num_fields] for i in range(0, len(chats_data), num_fields)]
 
-#     for entry in chat_entries:
-#         chat_id, playlist_link, discord_channel = entry
+    for entry in chat_entries:
+        chat_id, playlist_link, discord_channel = entry
         
-#         # Check if it's an existing row or a new row (new rows will have an empty chat_id)
-#         if chat_id:
-#             cursor.execute('''UPDATE chats
-#                               SET playlist_link = ?, discord_channel = ?
-#                               WHERE chat_id = ?''', (playlist_link, discord_channel, chat_id))
-#         else:
-#             # Insert new row
-#             cursor.execute('''INSERT INTO chats (playlist_link, discord_channel)
-#                               VALUES (?, ?)''', (playlist_link, discord_channel))
+        # Check if it's an existing row or a new row (new rows will have an empty chat_id)
+        if chat_id:
+            cursor.execute('''UPDATE chats
+                              SET playlist_link = ?, discord_channel = ?
+                              WHERE chat_id = ?''', (playlist_link, discord_channel, chat_id))
+        else:
+            # Insert new row
+            cursor.execute('''INSERT INTO chats (playlist_link, discord_channel)
+                              VALUES (?, ?)''', (playlist_link, discord_channel))
 
-#     conn.commit()
-#     conn.close()
+    conn.commit()
+    conn.close()
     
-#     flash("Chats configuration updated successfully!")
-#     return redirect(url_for('advanced_setup'))
+    flash("Chats configuration updated successfully!")
+    return redirect(url_for('advanced_setup'))
 
-# @app.route('/update_chats', methods=['POST'])
-# def update_chats():
-#     conn = sqlite3.connect(SECRET_DATABASE)
-#     cursor = conn.cursor()
+@app.route('/update_chats', methods=['POST'])
+def update_chats():
+    conn = sqlite3.connect(SECRET_DATABASE)
+    cursor = conn.cursor()
 
-#     # Retrieve all column names from the chats table
-#     cursor.execute("PRAGMA table_info(chats)")
-#     column_info = cursor.fetchall()
-#     column_names = [info[1] for info in column_info]  # Extract column names
+    # Retrieve all column names from the chats table
+    cursor.execute("PRAGMA table_info(chats)")
+    column_info = cursor.fetchall()
+    column_names = [info[1] for info in column_info]  # Extract column names
     
-#     # Retrieve all rows from the chats table
-#     cursor.execute("SELECT * FROM chats")
-#     chats = cursor.fetchall()
+    # Retrieve all rows from the chats table
+    cursor.execute("SELECT * FROM chats")
+    chats = cursor.fetchall()
 
-#     # Loop through each row in the table
-#     for row_index, row in enumerate(chats):
-#         # Check if the user has typed DELETE for the row
-#         delete_value = request.form.get(f"delete_row_{row_index}")
-#         if delete_value == "DELETE":
-#             # Delete the row if DELETE is typed
-#             cursor.execute("DELETE FROM chats WHERE chat_id = ?", (row[0],))  # Assuming chat_id is in the first column
-#             continue
+    # Loop through each row in the table
+    for row_index, row in enumerate(chats):
+        # Check if the user has typed DELETE for the row
+        delete_value = request.form.get(f"delete_row_{row_index}")
+        if delete_value == "DELETE":
+            # Delete the row if DELETE is typed
+            cursor.execute("DELETE FROM chats WHERE chat_id = ?", (row[0],))  # Assuming chat_id is in the first column
+            continue
         
-#         # Prepare to update the row with new values from the form
-#         updated_values = []
-#         for column_index, column_name in enumerate(column_names):
-#             # Skip the first column (assuming it's the chat_id and should not be updated)
-#             if column_name == "chat_id":
-#                 continue
-#             updated_value = request.form.get(f"row_{row_index}_{column_index}")
-#             updated_values.append(updated_value)
+        # Prepare to update the row with new values from the form
+        updated_values = []
+        for column_index, column_name in enumerate(column_names):
+            # Skip the first column (assuming it's the chat_id and should not be updated)
+            if column_name == "chat_id":
+                continue
+            updated_value = request.form.get(f"row_{row_index}_{column_index}")
+            updated_values.append(updated_value)
         
-#         # Dynamically create the SQL update query using the column names
-#         set_clause = ", ".join([f"{column} = ?" for column in column_names[1:]])  # Skip 'chat_id'
-#         cursor.execute(f"""
-#             UPDATE chats
-#             SET {set_clause}
-#             WHERE chat_id = ?
-#         """, (*updated_values, row[0]))  # Assuming 'chat_id' is in the first column
+        # Dynamically create the SQL update query using the column names
+        set_clause = ", ".join([f"{column} = ?" for column in column_names[1:]])  # Skip 'chat_id'
+        cursor.execute(f"""
+            UPDATE chats
+            SET {set_clause}
+            WHERE chat_id = ?
+        """, (*updated_values, row[0]))  # Assuming 'chat_id' is in the first column
 
-#     conn.commit()
-#     conn.close()
+    conn.commit()
+    conn.close()
     
-#     flash("Chats updated successfully!")
-#     return redirect(url_for('advanced_setup'))
+    flash("Chats updated successfully!")
+    return redirect(url_for('advanced_setup'))
 
 
 
-# @app.route('/add_chat_row', methods=['GET', 'POST'])
-# def add_chat_row():
-#     conn = sqlite3.connect(SECRET_DATABASE)
-#     cursor = conn.cursor()
+@app.route('/add_chat_row', methods=['GET', 'POST'])
+def add_chat_row():
+    conn = sqlite3.connect(SECRET_DATABASE)
+    cursor = conn.cursor()
     
-#     # Insert a new row with default values (e.g., empty strings or appropriate defaults)
-#     cursor.execute("INSERT INTO chats (playlist_link, discord_channel) VALUES (?, ?)", ("", ""))
-#     conn.commit()
-#     conn.close()
+    # Insert a new row with default values (e.g., empty strings or appropriate defaults)
+    cursor.execute("INSERT INTO chats (playlist_link, discord_channel) VALUES (?, ?)", ("", ""))
+    conn.commit()
+    conn.close()
 
-#     flash("New row added successfully!")
-#     return redirect(url_for('advanced_setup'))
+    flash("New row added successfully!")
+    return redirect(url_for('advanced_setup'))
 
-# @app.route('/advanced_setup', methods=['GET', 'POST'])
-# def advanced_setup():
-#     secret_setup_info = dbt.get_secret_setup_info_dict(SECRET_DATABASE)
-#     client_id = secret_setup_info['client_id']
-#     client_secret = secret_setup_info['client_secret']
+@app.route('/advanced_setup', methods=['GET', 'POST'])
+def advanced_setup():
+    secret_setup_info = dbt.get_secret_setup_info_dict(SECRET_DATABASE)
+    client_id = secret_setup_info['client_id']
+    client_secret = secret_setup_info['client_secret']
     
-#     chats_info =dbt.update_spotbot_chat(SECRET_DATABASE)
+    chats_info =dbt.update_spotbot_chat(SECRET_DATABASE)
 
-#     return render_template(
-#         'advanced_setup.html', 
-#         client_id=client_id, 
-#         client_secret=client_secret, 
-#         discord_token=chats_info[0]['discord_token'],
-#         playlist_links=chats_info[1]['playlist_links'], 
-#         discord_channels=chats_info[0]['discord_channels'], 
-#         installed_features=installed_features,
-#         chats=chats_info[3],  # Pass chats data to template
-#         column_names=chats_info[2]  # Pass column names to template
-#     )
+    return render_template(
+        'advanced_setup.html', 
+        client_id=client_id, 
+        client_secret=client_secret, 
+        discord_token=chats_info[0]['discord_token'],
+        playlist_links=chats_info[1]['playlist_links'], 
+        discord_channels=chats_info[0]['discord_channels'], 
+        installed_features=installed_features,
+        chats=chats_info[3],  # Pass chats data to template
+        column_names=chats_info[2]  # Pass column names to template
+    )
 
-# @app.route('/save_setup', methods=['POST'])
-# def save_setup():
-#     # Your logic to save setup information
-#     # Example:
-#     client_id = request.form.get('client_id')
-#     client_secret = request.form.get('client_secret')
-#     discord_token = request.form.get('discord_token')
-#     playlist_links = request.form.get('grab_past_flag')
-#     discord_channels = request.form.get('discord_channels')
+@app.route('/save_setup', methods=['POST'])
+def save_setup():
+    # Your logic to save setup information
+    # Example:
+    client_id = request.form.get('client_id')
+    client_secret = request.form.get('client_secret')
+    discord_token = request.form.get('discord_token')
+    playlist_links = request.form.get('grab_past_flag')
+    discord_channels = request.form.get('discord_channels')
     
-#     # Save these details to the database, probably using the functions in database_tools.py
-#     dbt.save_secrets_to_db(client_id, client_secret, discord_token, playlist_links, discord_channels)
+    # Save these details to the database, probably using the functions in database_tools.py
+    dbt.save_secrets_to_db(client_id, client_secret, discord_token, playlist_links, discord_channels)
     
-#     flash("Secret Setup saved successfully!")
-#     return redirect(url_for('advanced_setup'))  # Redirect back to advanced_setup or another page
+    flash("Secret Setup saved successfully!")
+    return redirect(url_for('advanced_setup'))  # Redirect back to advanced_setup or another page
 
 
-# @app.route('/save_advanced_setup', methods=['POST'])
-# def save_advanced_setup():
-#     client_id = request.form.get('client_id')
-#     client_secret = request.form.get('client_secret')
-#     discord_token = request.form.get('discord_token')
+@app.route('/save_advanced_setup', methods=['POST'])
+def save_advanced_setup():
+    client_id = request.form.get('client_id')
+    client_secret = request.form.get('client_secret')
+    discord_token = request.form.get('discord_token')
     
-#     # Save these details to the database, probably using the functions in database_tools.py
-#     dbt.save_secrets_to_db(client_id, client_secret, discord_token, tokensOnlyFlag=True)
+    # Save these details to the database, probably using the functions in database_tools.py
+    dbt.save_secrets_to_db(client_id, client_secret, discord_token, tokensOnlyFlag=True)
 
-#     flash('Settings updated successfully!')
-#     return redirect(url_for('advanced_setup'))
+    flash('Settings updated successfully!')
+    return redirect(url_for('advanced_setup'))
 
 @app.route('/link_spotify')
 def link_spotify():
@@ -296,23 +296,23 @@ def close_app():
     shutdown_server()
     return 'Server shutting down...'
 
-# @app.route('/continue_setup', methods=['POST'])
-# def continue_setup():
-#     chats_info =dbt.update_spotbot_chat(SECRET_DATABASE)
+@app.route('/continue_setup', methods=['POST'])
+def continue_setup():
+    chats_info =dbt.update_spotbot_chat(SECRET_DATABASE)
 
-#     return render_template(
-#         'setup.html', 
-#         client_id=client_id, 
-#         client_secret=client_secret, 
-#         discord_token=chats_info[0]['discord_token'],
-#         playlist_links=chats_info[1]['playlist_links'], 
-#         discord_channels=chats_info[0]['discord_channels'], 
-#         installed_features=installed_features,
-#         chats=chats_info[3],  # Pass chats data to template
-#         column_names=chats_info[2]  # Pass column names to template
-#     )
+    return render_template(
+        'setup.html', 
+        client_id=client_id, 
+        client_secret=client_secret, 
+        discord_token=chats_info[0]['discord_token'],
+        playlist_links=chats_info[1]['playlist_links'], 
+        discord_channels=chats_info[0]['discord_channels'], 
+        installed_features=installed_features,
+        chats=chats_info[3],  # Pass chats data to template
+        column_names=chats_info[2]  # Pass column names to template
+    )
 
-    #return render_template('setup.html', installed_features=installed_features)
+    return render_template('setup.html', installed_features=installed_features)
 
 # @app.route('/advanced_setup', methods=['GET', 'POST'])
 # def advanced_setup():
@@ -353,3 +353,6 @@ def create_spotify_oauth():
         redirect_uri=url_for('redirectPage', _external=True),
         scope='playlist-modify-public user-library-read'
     )
+
+if __name__ == '__main__':
+    app.run(debug=True)

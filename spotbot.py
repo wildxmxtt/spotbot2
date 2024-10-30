@@ -27,8 +27,24 @@ bot = commands.Bot(command_prefix='!', case_insensitive=True, intents=intents)
 
 @bot.event
 async def on_ready():
+    checkMsgOnBoot = True
+    BootMute = True
+    config_data = config_tools.config_data()
     #Lets programmer know that the bot has been activated
     print(pgrm_signature + 'SpotifyBot: ON')
+    if checkMsgOnBoot == True:
+        for channel_item in config_data['pc']:
+            channel = int(config_data['pc'][channel_item]['channel'])
+            channel_ctx = bot.get_channel(channel)
+            if channel_ctx is not None:
+                if(BootMute == False):
+                    await channel_ctx.send("Bot is now online! Validating messages [WIP]")  # Message to send on startup
+                await channel_tools.search_past(enabled=True, ctx=channel_ctx)
+                if(BootMute == False):
+                    await channel_ctx.send("Validate lost songs complete! [WIP]")  # Message to send on startup
+            else:
+                print("Channel not found. Please check the channel | ID:" + channel)
+
 
 
 #This is the help command that lets the user know all of the avaliable commands that can be used 
@@ -45,7 +61,10 @@ async def hlp(ctx):
 #gives the link set in the setup.json file
 @bot.command()
 async def sLink(ctx):
-     await ctx.reply(playlist_link)
+     config_data = config_tools.config_data()
+     playlist_channel = config_data['pc']
+     playlist_links = await channel_tools.return_playlists(playlist_channel=playlist_channel)
+     await ctx.reply(playlist_links)
 
 #a request command to give the user back a random song from the playlist 
 @bot.command()
@@ -109,8 +128,17 @@ async def grabPast(ctx):
 
 @bot.event
 async def on_message(msg):
-    #grabs the discord channel specified in setup.json
-    if msg.channel.id == discord_channel:
+    config_data = config_tools.config_data()
+    grab_past_flag = config_data['grab_past_flag']
+    playlist_channel = config_data['pc']
+    
+    #gets channels from playlist channel
+    channels = await channel_tools.return_channels(playlist_channel=playlist_channel)
+
+    #gets checks if message was sent in a channel spotbot is tracking
+    valid_channel_flag = await channel_tools.is_message_in_valid_channel(message=msg, channels=channels)
+    
+    if(valid_channel_flag == True):
     #once again, all the file work can be moved over to the dupCheck() function for single file handling
         strCheck = "https://open.spotify.com/track"
 
@@ -127,13 +155,18 @@ async def on_message(msg):
                 if(test == True):
                     await msg.add_reaction (rEmoji)
                 else:
-                    print(pgrm_signature + playlist_update.sendOff())
+                    print(pgrm_signature + playlist_update.sendOff(msg))
                     await msg.add_reaction(checkEmoji) #adds emoji when song is added to playlist
                     if(grab_past_flag == 0):
                         await msg.reply("WARNING GRAB PAST FLAG IS STILL ZERO, IF THERE ARE NO PAST SONGS YOU NEED TO GRAB. SET THE GRAB PAST FLAG TO ZERO IN setup.json AND RESTART spotbot.py. THIS WILL CAUSE ERRORS ELSEWISE")
-
+        #this else relates to if re.search(strCheck, msg.content):
         else:            
-            print(pgrm_signature + "Not valid Spotify link")
+            print(pgrm_signature + "Not valid Spotify link in channel " + str(msg.channel.id) )
+            await bot.process_commands(msg)
+
+    #this else relates to channel not being correct
+    else:            
+        print(pgrm_signature + "Not valid Spotify channel: " + str(msg.channel.id) + " | spotbot looking at channels: " + str(channels))
     
         await bot.process_commands(msg)
 

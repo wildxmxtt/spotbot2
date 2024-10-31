@@ -15,7 +15,7 @@ def initialize_milestones(file, playlist_array):
     cur = conn.cursor()
 
     for playlist in playlist_array:
-        playlist_ID = playlist[1].split('/')[-1].split('?')[0] # Extract playlit ID
+        playlist_ID = playlist['playlist'].split('/')[-1].split('?')[0] # Extract playlist ID
 
         # If the playlist ID is in the database return false
         cur.execute('SELECT playlist_id from playlist_duration_milestones WHERE playlist_id = ?', (playlist_ID, ))
@@ -43,7 +43,6 @@ def get_setup_info(file_name):
         data = json.load(file)
 
     # Return information
-    print(data)
     return data
 
 # Returns tuples of playlist information. Index 0 is the playlist link, index 1 is the discord channel ID
@@ -51,14 +50,25 @@ def get_playlist_array(file_name):
     with open(file_name, 'r') as file:
         data = json.load(file)
 
-    return data["playlists"]
+    return data["playlist_channel"]
     
 # Returns the playlist link using the chat ID
-def get_playlist_link(file_name, chat_ID):
+def get_playlist_link(file_name, chat_ID=None):
     with open(file_name, 'r') as file:
         data = json.load(file)
 
-    playlists = data["playlists"]
-    for playlist in playlists:
-        if chat_ID in playlist["discord_channel"]:
-            print(playlist["playlist_link"])
+    # Extract playlist info from JSON
+    playlist_channel = data["playlist_channel"]
+
+    if chat_ID is None:
+        # flask get tracks test
+        first_playlist = playlist_channel[0]["playlist"]
+
+        # Return the first playlist link available
+        return first_playlist
+    
+    else:
+        # Regular use: return playlist link defined by chat ID from JSON
+        for playlist in playlist_channel:
+            if chat_ID in playlist["channel"]:
+                return playlist["playlist"]

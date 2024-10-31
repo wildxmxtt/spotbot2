@@ -15,15 +15,17 @@ import database_tools
 
 pgrm_signature = "spotbot.py: "
 
-# Get any discord token in the DB
-conn = sqlite3.connect(r'databases\secrets.db')
-cur = conn.cursor()
+# Define the setup JSON
+SECRET_DATABASE = 'setup.json'
 
-cur.execute('SELECT discord_token FROM setup')
-
-TOKEN = cur.fetchone()
-
-conn.close()
+# Sets up our secret information into the application from secrets.db
+secret_setup_info = database_tools.get_setup_info(SECRET_DATABASE)
+CLIENT_ID = secret_setup_info['client_id']
+CLIENT_SECRET = secret_setup_info['client_secret']
+TOKEN = secret_setup_info['discord_token']
+grab_past_flag = secret_setup_info['grab_past_flag']
+LEADERBOARD = secret_setup_info['installed_features']['leaderboard']
+PLAYLIST_CHANNEL = secret_setup_info['playlist_channel']
 
 
 intents = discord.Intents.all()
@@ -42,15 +44,13 @@ async def on_ready():
 #This is the help command that lets the user know all of the avaliable commands that can be used 
 @bot.command()
 async def hlp(ctx):
-    setup_info = database_tools.get_setup_info(r'databases\secrets.db', ctx.message.guild.name)
-
     helpText = ("The commands for this bot go as follows: \n" + 
         "[!]sLink (gives the user the link to the spotify playlist) \n" + 
         "[!]grabPast (allows for the user to grab past songs sent in a chat, this can only be ran once) \n" +
         "[!]r (gives the user a random song from the playlist!) \n" +
         "[!]waves (generate Spotify's wave codes png image files.)\n")
 
-    if int(setup_info[4]) == 1:
+    if LEADERBOARD is True:
         helpText += ("[!]leaderboard (gives a leadearboard of all time highest contributing users) \n" +
             "[!]thismonth (gives a leaderboard of this months hightst contributing users) \n" +
             "[!]reactchamp (gives a leaderboard of this months most reacted contributed songs) \n" +
@@ -62,12 +62,10 @@ async def hlp(ctx):
 
 #gives the link set in the setup.json file
 @bot.command()
-async def sLink(ctx):
-    playlist_array = database_tools.get_playlist_array(r'databases\secrets.db')
-    
-    for playlist in playlist_array:
-        if int(playlist[1]) == ctx.channel.id:
-            await ctx.reply(playlist[0])
+async def sLink(ctx):    
+    for playlist in PLAYLIST_CHANNEL:
+        if int(playlist['channel']) == ctx.channel.id:
+            await ctx.reply(playlist['playlist'])
 
 #a request command to give the user back a random song from the playlist 
 @bot.command()
@@ -102,10 +100,8 @@ async def r(ctx):
 # a request command to produce an all time leaderboard stats for the respective discord server 
 @bot.command()
 async def leaderboard(ctx):
-    setup_info = database_tools.get_setup_info(r'databases\secrets.db', ctx.message.guild.name)
-
     # Check if the leaderboard information is enabled via setup.json
-    if setup_info[5] == 0: return False
+    if leaderboard == 0: return False
 
     # Connect to the SQLite Database
     conn = sqlite3.connect(r'databases\spotbot.db')
@@ -132,10 +128,8 @@ async def leaderboard(ctx):
 # a request command to produce a leaderboard with this months stats for the respective discord server
 @bot.command()
 async def thismonth(ctx):
-    setup_info = database_tools.get_setup_info(r'databases\secrets.db', ctx.message.guild.name)
-    
     # Check if the leaderboard information is enabled via setup.json
-    if setup_info[4] == 0: return False
+    if leaderboard == 0: return False
 
     # Connect to the SQLite Database
     conn = sqlite3.connect(r'databases\spotbot.db')
@@ -169,11 +163,8 @@ async def thismonth(ctx):
 # A request that produces a leaderboard with this months highest reacted songs
 @bot.command()
 async def reactChamp(ctx):
-    # Get set up info and playlists
-    setup_info = database_tools.get_setup_info(r'databases\secrets.db', ctx.message.guild.name)
-
     # Check if the leaderboard information is enabled via setup.json
-    if setup_info[4] == 0: return False
+    if leaderboard == 0: return False
 
     # warn user this may take a while
     await ctx.send(f"Grabbing messages - this may take a while...")
@@ -243,14 +234,10 @@ async def reactChamp(ctx):
 # A request that produces a leaderboard with this months hight reacted songs local to the represented playlist
 @bot.command()
 async def localreactChamp(ctx):
-    # Get set up info and playlists
-    setup_info = database_tools.get_setup_info(r'databases\secrets.db', ctx.message.guild.name)
-    playlist_array = database_tools.get_playlist_array(r'databases\secrets.db')
-
     # Check if the leaderboard information is enabled via setup.json
-    if setup_info[4] == 0: return False
+    if leaderboard == 0: return False
 
-    for playlist in playlist_array:
+    for playlist in PLAYLIST_CHANNEL:
         if ctx.channel.id == int(playlist[1]):
             # warn user this may take a while
             await ctx.send(f"Grabbing messages - this may take a while...")
@@ -263,8 +250,7 @@ async def localreactChamp(ctx):
             current_year = current_date.year
             current_month = current_date.month
 
-            playlist_link = database_tools.get_playlist_link(r'databases\secrets.db', playlist[1])
-            playlist_ID = getSpotifyID(playlist_link[0])
+            playlist_ID = getSpotifyID(playlist['playlist'])
 
             # Get top 10 users and their number of songs added for the current month for the specified playlist
             cur.execute("""
@@ -368,7 +354,7 @@ async def sendLeaderBoardEmbed(ctx, results, title):
 #This is to grab the past songs that have been sent to the channel
 @bot.command()
 async def grabPast(ctx):
-    with open("setup.json", 'r') as setupf: #must reopen the file to check if flag has been updated
+    with open(SECRET_DATABASE, 'r') as setupf: #must reopen the file to check if flag has been updated
                     data = json.load(setupf)
                     grab_past_flag = (data['grab_past_flag'])
 
@@ -381,31 +367,28 @@ async def grabPast(ctx):
         await ctx.reply("Grabbing songs now please wait until FINISHED is sent")                
         await ctx.send("Grabbing & Flitering Past Messages (this could take a while).....")
 
-        playlist_array = database_tools.get_playlist_array(r'databases\secrets.db')
-        # 0 index is URL, 1 index is discord channelID
-
         # Loop through available playlists
-        for playlist in playlist_array:
+        for playlist in PLAYLIST_CHANNEL:
             # Clear the uri.txt file
             file1 = open("uri.txt", "w+")
             file1.close()
 
             # Get messages from each channel 
-            messages = await fetch_message_history(playlist[1])
+            messages = await fetch_message_history(playlist['channel'])
 
             # Loop through messages that contain spotify links
             word = "https://open.spotify.com/track"
             for msg in messages:
                 if word in msg.content: # Only spotifiy links
-                    dupCheck(msg, playlist[0])# send off the link and check to see if it is a duplicate                            
+                    dupCheck(msg, playlist['channel'])# send off the link and check to see if it is a duplicate                            
             
             # send off the spotifyIDs file to be uploaded to Spotify
             print(pgrm_signature + "Uri text file written to succesfully!\n")
             print(pgrm_signature + "Sending songs off to spotify")
-            print(pgrm_signature + playlist_update.sendOff(playlist[0]))
+            print(pgrm_signature + playlist_update.sendOff(playlist['channel']))
     
         # send a success after the loop
-        await ctx.send("Messages Grabbed, Process Complete, FINISHED" + "\n Here is the Spotify Link: " + playlist[0])
+        await ctx.send("Messages Grabbed, Process Complete, FINISHED" + "\n Here is the Spotify Link: " + playlist['channel'])
         
         update_gp_flag()
         print(f"{pgrm_signature}: Updated the grabpast flag")
@@ -414,18 +397,17 @@ async def grabPast(ctx):
 
 @bot.event
 async def on_message(msg):
-    # Get the set up info and playlist array
-    setup_info = database_tools.get_setup_info(r'databases\secrets.db', msg.guild.name)
-    playlist_array = database_tools.get_playlist_array(r'databases\secrets.db')
-    
+    with open(SECRET_DATABASE, 'r') as setupf: #must reopen the file to check if flag has been updated
+                    data = json.load(setupf)
+                    grab_past_flag = (data['grab_past_flag'])
 
     # Loop through available playlists
-    for playlist in playlist_array:
+    for playlist in PLAYLIST_CHANNEL:
         #for channels in discord_channel: 
         # If the link is sent into the chat specified
-        if msg.channel.id == int(playlist[1]):
+        if msg.channel.id == int(playlist['channel']):
             # Record playlist link
-            playlist_link = playlist[0]
+            playlist_link = playlist['playlist']
 
             #once again, all the file work can be moved over to the dupCheck() function for single file handling
             strCheck = "https://open.spotify.com/track"
@@ -449,7 +431,7 @@ async def on_message(msg):
                         await msg.add_reaction(checkEmoji) #adds emoji when song is added to playlist
 
                         # Warn users that previous songs may not be accounted for as grabPast has NOT been called
-                        if(setup_info[3] == 0):
+                        if(int(grab_past_flag) == 0):
                             await msg.reply("WARNING GRAB PAST FLAG IS STILL ZERO, IF THERE ARE NO PAST SONGS YOU NEED TO GRAB. SET THE GRAB PAST FLAG TO ZERO IN setup.json AND RESTART spotbot.py. THIS WILL CAUSE ERRORS ELSEWISE")
                         
                         # Check for acheivements (connect to db, get song count)
@@ -462,7 +444,7 @@ async def on_message(msg):
                         # Every 10 songs check for achievements (For perfromance)
                         if (songs % 5 == 0 or songs == 69):
                             # Get the acheivement string (if any)
-                            celebration = achievements.checkAchievement(songs, setup_info[3])
+                            celebration = achievements.checkAchievement(songs, grab_past_flag)
 
                             # Get duration achievement (if any)
                             duration = achievements.checkDurationAchievement(playlist_update.get_playlist_duration(playlist_link))
@@ -476,8 +458,8 @@ async def on_message(msg):
                         conn.close()
 
         else:            
-            print(pgrm_signature + "Not valid Spotify channel: " + str(msg.channel.id) + " | spotbot looking at channels: " + int(playlist[1]))
-        
+            print(pgrm_signature + "Not valid Spotify channel: " + str(msg.channel.id))
+
             await bot.process_commands(msg)
 
             # Return True to show success and break from any loops
@@ -487,12 +469,9 @@ async def on_message(msg):
 
 @bot.command()
 async def waves(ctx, arg):
-    playlist_array = database_tools.get_playlist_array(r'databases\secrets.db')
-    # 0 index is URL, 1 index is discord channelID
-
-    for playlist in playlist_array:
+    for playlist in PLAYLIST_CHANNEL:
         # Command only functions within the global variable: discord_channel, specified in setup.json
-        if ctx.channel.id == int(playlist[1]):
+        if ctx.channel.id == int(playlist['channel']):
             try:
                 # Regex to ensure argument passed to command is acceptable
                 uri_regex = r'https://open.spotify.com/track/(.+?)\?si='
@@ -582,10 +561,9 @@ def dupCheck(msg, playlist_link):
     conn.close()
 
 def uritxt(link):
-    #opens up the setup.json file
-    with open("setup.json", 'r') as setupf:
-        data = json.load(setupf)
-        grab_past_flag = (data['grab_past_flag']) #this will check if the grab_past_flag has been updated
+    with open(SECRET_DATABASE, 'r') as setupf: #must reopen the file to check if flag has been updated
+                    data = json.load(setupf)
+                    grab_past_flag = (data['grab_past_flag'])
 
     print(pgrm_signature + "Writting to uri.txt..... \n")
     
@@ -640,21 +618,20 @@ def uritxt(link):
     
 def update_gp_flag(): 
  ###Update grab_past_flag#####
-    filename = "setup.json"
     dictObj = []
 
     # Check if file exists
-    if path.isfile(filename) is False:
+    if path.isfile(SECRET_DATABASE) is False:
         raise Exception("File not found")
     
     # Read JSON file
-    with open(filename) as fp:
+    with open(SECRET_DATABASE) as fp:
         dictObj = json.load(fp)
     
         # "grab_past_flag" : 0
         dictObj.update({"grab_past_flag": 1})
     
-        with open(filename, 'w') as json_file:
+        with open(secret_setup_info, 'w') as json_file:
             json.dump(dictObj, json_file, 
                         indent=4,  
                         separators=(',',': '))
@@ -693,9 +670,9 @@ def getSpotifyID(playlist_link):
     return playlist_link.split('/')[-1].split('?')[0]
 
 # Initialize the database if not created yet
-database_tools.initialize_milestones(r'databases\spotbot.db', database_tools.get_playlist_array(r'databases\secrets.db'))
+database_tools.initialize_milestones(r'databases\spotbot.db', PLAYLIST_CHANNEL)
 
 # Refresh the token upon startup
 playlist_update.startup_token_refresh()
 
-bot.run(TOKEN[0])
+bot.run(TOKEN)

@@ -12,6 +12,8 @@ import database_tools
 #        client_secret = (data['client_secret'])
 pgrm_signature = "playlist_update.py: "
 
+SECRET_DATABASE = 'setup.json'
+
 def sendOff(playlist_link):
     # pgrm_signature = "playlist_update.py: "
 
@@ -89,34 +91,34 @@ def get_playlist_duration(playlist_link):
 
 #This function keep the user from having to get a new token manually every hour
 def refresh_the_token(data, TOKEN, refresh_token): 
-        #This code was made possible by https://www.youtube.com/watch?v=-FsFT6OwE1A 
-        #Notable timestamps 10:14, 40:25
+    #This code was made possible by https://www.youtube.com/watch?v=-FsFT6OwE1A 
+    #Notable timestamps 10:14, 40:25
 
-        setupInfo = database_tools.get_setup_info('secrets.db')
+    setupInfo = database_tools.get_setup_info(SECRET_DATABASE)
 
-        auth_client = setupInfo[0] + ":" + setupInfo[1]
-        auth_encode = 'Basic ' + base64.b64encode(auth_client.encode()).decode()
+    auth_client = setupInfo['client_id'] + ":" + setupInfo['client_secret']
+    auth_encode = 'Basic ' + base64.b64encode(auth_client.encode()).decode()
 
-        headers = {
-            'Authorization': auth_encode,
-            }
+    headers = {
+        'Authorization': auth_encode,
+        }
 
-        data = {
-            'grant_type' : 'refresh_token',
-            'refresh_token' : refresh_token
-            }
+    data = {
+        'grant_type' : 'refresh_token',
+        'refresh_token' : refresh_token
+        }
 
-        response = requests.post('https://accounts.spotify.com/api/token', data=data, headers=headers) #sends request off to spotify
+    response = requests.post('https://accounts.spotify.com/api/token', data=data, headers=headers) #sends request off to spotify
 
-        if(response.status_code == 200): #checks if request was valid
-            print(pgrm_signature + "The request to went through we got a status 200; Spotify token refreshed")
-            response_json = response.json()
-            new_expire = response_json['expires_in']
-            print(pgrm_signature + "the time left on new token is: "+ str(new_expire / 60) + "min") #says how long
-            return response_json["access_token"]
-        else:
-            print(pgrm_signature + "ERROR! The response we got was: "+ str(response))
-            return TOKEN #last ditch to try and make it work if TOKEN varaible is still active
+    if(response.status_code == 200): #checks if request was valid
+        print(pgrm_signature + "The request to went through we got a status 200; Spotify token refreshed")
+        response_json = response.json()
+        new_expire = response_json['expires_in']
+        print(pgrm_signature + "the time left on new token is: "+ str(new_expire / 60) + "min") #says how long
+        return response_json["access_token"]
+    else:
+        print(pgrm_signature + "ERROR! The response we got was: "+ str(response))
+        return TOKEN #last ditch to try and make it work if TOKEN varaible is still active
         
 def get_spotify_json():
     with open("spotify.json", 'r') as info: #reads the json file that was just written to 

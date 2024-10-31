@@ -16,9 +16,9 @@ playlist_array = []
 SECRET_DATABASE = 'setup.json'
 # Sets up our secret information into the application from secrets.db
 secret_setup_info = dbt.get_setup_info(SECRET_DATABASE)
-if secret_setup_info is not None:
-    client_id = secret_setup_info['client_id']
-    client_secret = secret_setup_info['client_secret']
+client_id = secret_setup_info['client_id']
+client_secret = secret_setup_info['client_secret']
+TOKEN = secret_setup_info['discord_token']
 
 # Sample installed features setup
 # This can later be populated from an external source or form submission in the future
@@ -257,7 +257,6 @@ def redirectPage():
 
 @app.route('/getTracks')
 def getTracks():
-    secret_chat_info = dbt.get_playlist_array(SECRET_DATABASE)
     file = '.cache'
     if(os.path.exists(file)):
         #os.remove(file)
@@ -268,7 +267,7 @@ def getTracks():
         print("User not logged in")
         return redirect(url_for('index'))
     
-    playlist_link = str(secret_chat_info[0][0]) 
+    playlist_link = dbt.get_playlist_link(SECRET_DATABASE) 
     sp = spotipy.Spotify(auth=token_info['access_token'])
     fline = playlist_link.replace("https://open.spotify.com/playlist/", "")
     PLAYLISTID = (fline.split("?si")[0])

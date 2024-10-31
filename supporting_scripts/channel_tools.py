@@ -51,31 +51,48 @@ async def search_past(ctx, enabled=False):
         # to make it work with only one file, surprisingly all the playlist file handling is done in dupCheck()
         for msg in messages:
             if word in msg.content:
-                sb.uritxt(msg.content)
-                playlist_update.sendOff()
-                await emojiCheck(msg)#checks to see if the correct emoji is on the message
+                # sb.uritxt(msg.content)
+                has_spotbot_emoji = await emojiCheck(msg)#checks to see if the correct emoji is on the message
+                #if it dose not have a spotbot emoji, assume false and attempt to add: NOTE add later check to verify in db that song has NOT been added
+                if has_spotbot_emoji == False:
+                    playlist_update.sendOff2(msg=msg)
         config_tools.logs("Grabbed past messages", log_file=r'logs/channel_tools.log')
         print("Past finished searching")
+
+
+def msg_reactions_list(msg_reactions):
+    emoji_list = []
+    for item in msg_reactions:
+        emoji = item.emoji
+        emoji_list.append(emoji)
+    
+    return emoji_list
+
+
+def emoji_list_match(list1, list2):
+    # Check if there is any intersection between the two lists
+    if set(list1).intersection(set(list2)):
+        return True
+    else:
+        return False
+
 
 async def emojiCheck(msg):
     #checkEmoji = "☑️"
     checkEmoji = "💢"
     rEmoji = "🔁" 
-    spotbot_emojis = rEmoji, checkEmoji
+    spotbot_emojis = [rEmoji, checkEmoji]
         # try:
-    message = msg  
-    if spotbot_emojis not in message.reactions:                                                        # Grab each message
+    emoji_list = msg_reactions_list(msg_reactions=msg.reactions)
+    
+    #if false that means spotbot has not scanned the message before
+    spotbot_emoji_flag = emoji_list_match(spotbot_emojis, emoji_list)
+    if spotbot_emoji_flag == False:                                                        # Grab each message
         print(msg.content)
-        await message.add_reaction (checkEmoji)
-        #add songs to playlist
-
-            # Add tuple of message, total reactions, and the spotify link
-        # except discord.NotFound:
-        #     print(f"{pgrm_signature}: Message with ID {msg_id[1]} not found")
-        # except discord.Forbidden:
-        #     print(f"{pgrm_signature}: Bot doesn't have permission to fetch message {msg_id[0]}")
-        # except discord.HTTPException:
-        #     print(f"Failed to fetch message {msg_id[1]}")
+        await msg.add_reaction (checkEmoji)
+        return False
+    else: 
+        return True
 async def is_message_in_valid_channel(message, channels):
     if message.channel.id in channels:
         return True

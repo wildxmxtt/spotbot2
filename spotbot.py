@@ -6,17 +6,17 @@ import json
 import playlist_update
 from os import path
 import random
+import supporting_scripts.config_tools as config_tools
+import supporting_scripts.channel_tools as channel_tools
 
 pgrm_signature = "spotbot.py: "
 
-with open("setup.json", 'r') as setupf:
-    data = json.load(setupf)
-    TOKEN = (data['discord_token'])
-    client_id = (data['client_id'])
-    client_secret = (data['client_secret'])
-    playlist_link = (data['playlist_link'])
-    grab_past_flag = (data['grab_past_flag'])
-    discord_channel = (data['discord_channel'])
+config_data = config_tools.config_data()
+playlist_channel = config_data['pc']
+TOKEN = config_data['discord_token']
+client_id = config_data['client_id']
+client_secret = config_data['client_secret']
+grab_past_flag = config_data['grab_past_flag']
 
 
 intents = discord.Intents.all()

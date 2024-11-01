@@ -235,10 +235,10 @@ async def reactChamp(ctx):
 @bot.command()
 async def localreactChamp(ctx):
     # Check if the leaderboard information is enabled via setup.json
-    if leaderboard == 0: return False
+    if LEADERBOARD == False: return False
 
     for playlist in PLAYLIST_CHANNEL:
-        if ctx.channel.id == int(playlist[1]):
+        if ctx.channel.id == int(playlist['channel']):
             # warn user this may take a while
             await ctx.send(f"Grabbing messages - this may take a while...")
 
@@ -283,7 +283,7 @@ async def localreactChamp(ctx):
 
             # make and send the embed
             title = f"Reaction Champions for {calendar.month_name[current_month]}"
-            embed = discord.Embed(title=title, color=0x1DB954, url=playlist[0])
+            embed = discord.Embed(title=title, color=0x1DB954, url=playlist['playlist'])
             embed.description = "The top 5 highest reacted songs this month"
 
             loops = 1

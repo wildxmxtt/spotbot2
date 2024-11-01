@@ -71,7 +71,7 @@ async def sLink(ctx):
 @bot.command()
 async def r(ctx): 
     # Connect to the SQLite Database
-    conn = sqlite3.connect(r'databases\spotbot.db')
+    conn = sqlite3.connect('databases/spotbot.db')
     cur = conn.cursor()
 
     # Get the number of total songs in the playlist
@@ -104,7 +104,7 @@ async def leaderboard(ctx):
     if leaderboard == 0: return False
 
     # Connect to the SQLite Database
-    conn = sqlite3.connect(r'databases\spotbot.db')
+    conn = sqlite3.connect('databases/spotbot.db')
     cur = conn.cursor()
 
     # Get top 10 users and their number of songs added
@@ -132,7 +132,7 @@ async def thismonth(ctx):
     if leaderboard == 0: return False
 
     # Connect to the SQLite Database
-    conn = sqlite3.connect(r'databases\spotbot.db')
+    conn = sqlite3.connect('databases/spotbot.db')
     cur = conn.cursor()
 
     # Get the current year and month
@@ -170,7 +170,7 @@ async def reactChamp(ctx):
     await ctx.send(f"Grabbing messages - this may take a while...")
 
     # Connect to SQLite Database
-    conn = sqlite3.connect(r'databases\spotbot.db') # create or connect to the database
+    conn = sqlite3.connect('databases/spotbot.db') # create or connect to the database
     cur = conn.cursor()
 
     current_date = datetime.now()
@@ -243,7 +243,7 @@ async def localreactChamp(ctx):
             await ctx.send(f"Grabbing messages - this may take a while...")
 
             # Connect to SQLite Database
-            conn = sqlite3.connect(r'databases\spotbot.db')
+            conn = sqlite3.connect('databases/spotbot.db')
             cur = conn.cursor()
 
             current_date = datetime.now()
@@ -435,7 +435,7 @@ async def on_message(msg):
                             await msg.reply("WARNING GRAB PAST FLAG IS STILL ZERO, IF THERE ARE NO PAST SONGS YOU NEED TO GRAB. SET THE GRAB PAST FLAG TO ZERO IN setup.json AND RESTART spotbot.py. THIS WILL CAUSE ERRORS ELSEWISE")
                         
                         # Check for acheivements (connect to db, get song count)
-                        conn = sqlite3.connect(r'databases\spotbot.db')
+                        conn = sqlite3.connect('databases/spotbot.db')
                         cur = conn.cursor()
 
                         cur.execute("SELECT COUNT(*) FROM songs WHERE playlist_ID = ?", (getSpotifyID(playlist_link),))
@@ -524,7 +524,7 @@ def dupCheck(msg, playlist_link):
     string1 = msg.content
     
     # opening a text files (new)
-    conn = sqlite3.connect(r'databases\spotbot.db')
+    conn = sqlite3.connect('databases/spotbot.db')
     cur = conn.cursor()
 
     # Separate the string supplied to just the spotify ID
@@ -576,7 +576,7 @@ def uritxt(link):
         print(pgrm_signature + "Writting to uri.txt.....: \n")
 
         # connect to the database
-        conn = sqlite3.connect(r'databases\spotbot.db')
+        conn = sqlite3.connect('databases/spotbot.db')
         cur = conn.cursor()
 
         # Select all spotify IDs
@@ -670,7 +670,7 @@ def getSpotifyID(playlist_link):
     return playlist_link.split('/')[-1].split('?')[0]
 
 # Initialize the database if not created yet
-database_tools.initialize_milestones(r'databases\spotbot.db', PLAYLIST_CHANNEL)
+database_tools.initialize_milestones('databases/spotbot.db', PLAYLIST_CHANNEL)
 
 # Refresh the token upon startup
 playlist_update.startup_token_refresh()

@@ -7,7 +7,7 @@ pgrm_signature = "achievements.py: "
 # Checks the Duration acheievements and returns the string of the message that celebrates users
 def checkDurationAchievement(length):
     # connect to database
-    conn = sqlite3.connect('spotbot.db')
+    conn = sqlite3.connect('databases/spotbot.db')
     cur = conn.cursor()
 
     try:

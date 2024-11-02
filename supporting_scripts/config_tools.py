@@ -11,6 +11,8 @@ def config_data():
         playlist_channel = (data['playlist_channel'])
         # playlist_link = (data['playlist_link'])
         grab_past_flag = (data['grab_past_flag'])
+        use_init_spotify_token = (data['use_init_spotify_token'])
+        check_past_on_boot = (data['check_past_on_boot'])
         # discord_channel = (data['discord_channels'])
 
     pc = playlist_w_channel_setup(playlist_channel)
@@ -21,7 +23,9 @@ def config_data():
         'client_id': client_id,
         'client_secret': client_secret,
         'grab_past_flag': grab_past_flag,
-        'pc': pc 
+        'pc': pc, 
+        'init_spotify_flag': use_init_spotify_token,
+        'check_past_on_boot': check_past_on_boot
     }
 
     return data_dict
@@ -53,7 +57,7 @@ def logs(message, log_file = r'logs/default.log', pgrm_signature = __file__):
 
     try:
         with open(log_file, 'a') as f:
-            f.write(now + ' - ' + message)
+            f.write(now + ' - ' + message + " python file: " + pgrm_signature)
             f.write('\n')
     except Exception as e:
         print("Please make sure file exists in logs/<your_file_name.log>"+ e)

@@ -27,20 +27,18 @@ bot = commands.Bot(command_prefix='!', case_insensitive=True, intents=intents)
 
 @bot.event
 async def on_ready():
-    checkMsgOnBoot = True
-    BootMute = True
     config_data = config_tools.config_data()
+    check_past_on_boot = config_data['check_past_on_boot']
     #Lets programmer know that the bot has been activated
     print(pgrm_signature + 'SpotifyBot: ON')
-    if checkMsgOnBoot == True:
+    
+    if check_past_on_boot == True:
         for channel_item in config_data['pc']:
             channel = int(config_data['pc'][channel_item]['channel'])
             channel_ctx = bot.get_channel(channel)
             if channel_ctx is not None:
-                if(BootMute == False):
                     await channel_ctx.send("Bot is now online! Validating messages [WIP]")  # Message to send on startup
-                await channel_tools.search_past(enabled=True, ctx=channel_ctx)
-                if(BootMute == False):
+                    await channel_tools.search_past(enabled=True, ctx=channel_ctx, channel=channel)
                     await channel_ctx.send("Validate lost songs complete! [WIP]")  # Message to send on startup
             else:
                 print("Channel not found. Please check the channel | ID:" + channel)

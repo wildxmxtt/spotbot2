@@ -8,7 +8,7 @@ import supporting_scripts.config_tools as config_tools
 import playlist_update as playlist_update
 import discord
 from discord.ext import commands
-
+pgrm_signature = "channel_tools"
 
 def bot_setup():
     intents = discord.Intents.all()
@@ -38,7 +38,7 @@ def check_channels_on_boot(enabled=False, startup_flag=False, playlist_w_channel
 #grab past ish
 
 
-async def search_past(ctx, enabled=False):
+async def search_past(ctx, enabled=False, channel=""):
     if(enabled == True):
         word = "https://open.spotify.com/track"
         # await ctx.reply("Grabbing songs now please wait until FINISHED is sent")
@@ -50,14 +50,34 @@ async def search_past(ctx, enabled=False):
 
         # to make it work with only one file, surprisingly all the playlist file handling is done in dupCheck()
         for msg in messages:
-            if word in msg.content:
-                # sb.uritxt(msg.content)
-                has_spotbot_emoji = await emojiCheck(msg)#checks to see if the correct emoji is on the message
-                #if it dose not have a spotbot emoji, assume false and attempt to add: NOTE add later check to verify in db that song has NOT been added
-                if has_spotbot_emoji == False:
-                    playlist_update.sendOff2(msg=msg)
+            try:
+                if word in msg.content:
+                    # sb.uritxt(msg.content)
+                    has_spotbot_emoji = await emojiCheck(msg)#checks to see if the correct emoji is on the message
+                    #if it dose not have a spotbot emoji, assume false and attempt to add: NOTE add later check to verify in db that song has NOT been added
+                    if has_spotbot_emoji == False:
+                            try:
+                                playlist_update.sendOff2(msg=msg)
+                            except Exception as e:
+                                config_tools.logs(message="Error when sending song off to spotify: " + str(e), log_file=r'logs/error.log')       
+                            try:
+                                #if the emoji add fails
+                                await addEmoji(msg=msg)
+                            except Exception as e:
+                                config_tools.logs(message="Error while adding emoji to un-captured message (bot most likey attempted to update to many messages with emojis, and is in timeout by discord)")
+            #if the emoji check fails
+            except discord.NotFound:
+                config_tools.logs(message=f"{pgrm_signature}: Message with ID {msg.id} not found", log_file=r'logs/error.log')
+            except discord.Forbidden:
+                config_tools.logs(message=f"{pgrm_signature}:  Bot doesn't have permission to fetch message {msg.id}", log_file=r'logs/error.log')
+            except discord.HTTPException:
+                config_tools.logs(message=f"{pgrm_signature}: Failed to fetch message {msg.id}", log_file=r'logs/error.log')
+            except Exception as e:
+                config_tools.logs(message="Error whist fetching emoji: " + str(e), log_file=r'logs/error.log')
+                
+    
         config_tools.logs("Grabbed past messages", log_file=r'logs/channel_tools.log')
-        print("Past finished searching")
+        print("Past finished searching for channel " + str(channel))
 
 
 def msg_reactions_list(msg_reactions):
@@ -76,20 +96,20 @@ def emoji_list_match(list1, list2):
     else:
         return False
 
+async def addEmoji(msg, checkEmoji = "☑️"):
+    print(msg.content)
+    await msg.add_reaction (checkEmoji)
 
 async def emojiCheck(msg):
-    #checkEmoji = "☑️"
-    checkEmoji = "💢"
+    checkEmoji = "☑️"
+    #checkEmoji = "💢"
     rEmoji = "🔁" 
     spotbot_emojis = [rEmoji, checkEmoji]
         # try:
     emoji_list = msg_reactions_list(msg_reactions=msg.reactions)
-    
     #if false that means spotbot has not scanned the message before
     spotbot_emoji_flag = emoji_list_match(spotbot_emojis, emoji_list)
     if spotbot_emoji_flag == False:                                                        # Grab each message
-        print(msg.content)
-        await msg.add_reaction (checkEmoji)
         return False
     else: 
         return True

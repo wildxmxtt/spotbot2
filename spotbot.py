@@ -12,7 +12,8 @@ import achievements
 import aiohttp
 import io
 import database_tools
-
+import supporting_scripts.config_tools as config_tools
+import supporting_scripts.channel_tools as channel_tools
 pgrm_signature = "spotbot.py: "
 
 # Define the setup JSON
@@ -26,6 +27,8 @@ TOKEN = secret_setup_info['discord_token']
 grab_past_flag = secret_setup_info['grab_past_flag']
 LEADERBOARD = secret_setup_info['installed_features']['leaderboard']
 PLAYLIST_CHANNEL = secret_setup_info['playlist_channel']
+config_data = config_tools.config_data()
+playlist_channel = config_data['pc']
 
 
 intents = discord.Intents.all()
@@ -37,8 +40,22 @@ bot = commands.Bot(command_prefix='!', case_insensitive=True, intents=intents)
 
 @bot.event
 async def on_ready():
+    config_data = config_tools.config_data()
+    check_past_on_boot = config_data['check_past_on_boot']
     #Lets programmer know that the bot has been activated
     print(pgrm_signature + 'SpotifyBot: ON')
+    
+    if check_past_on_boot == True:
+        for channel_item in config_data['pc']:
+            channel = int(config_data['pc'][channel_item]['channel'])
+            channel_ctx = bot.get_channel(channel)
+            if channel_ctx is not None:
+                    await channel_ctx.send("Bot is now online! Validating messages [WIP]")  # Message to send on startup
+                    await channel_tools.search_past(enabled=True, ctx=channel_ctx, channel=channel)
+                    await channel_ctx.send("Validate lost songs complete! [WIP]")  # Message to send on startup
+            else:
+                print("Channel not found. Please check the channel | ID:" + channel)
+
 
 
 #This is the help command that lets the user know all of the avaliable commands that can be used 
@@ -62,10 +79,11 @@ async def hlp(ctx):
 
 #gives the link set in the setup.json file
 @bot.command()
-async def sLink(ctx):    
-    for playlist in PLAYLIST_CHANNEL:
-        if int(playlist['channel']) == ctx.channel.id:
-            await ctx.reply(playlist['playlist'])
+async def sLink(ctx):
+     config_data = config_tools.config_data()
+     playlist_channel = config_data['pc']
+     playlist_links = await channel_tools.return_playlists(playlist_channel=playlist_channel)
+     await ctx.reply(playlist_links)
 
 #a request command to give the user back a random song from the playlist 
 @bot.command()
@@ -218,7 +236,7 @@ async def reactChamp(ctx):
         member = guild.get_member(message[3])
 
         # Get track name and artist(s)
-        trackID = getSpotifyID(message[2])
+        trackID = getSpotifyID(message[2]) #FIX THIS
         nameAndArtist = playlist_update.get_track_name_and_artist(trackID)
 
         #will need username and link maybe?
@@ -250,7 +268,7 @@ async def localreactChamp(ctx):
             current_year = current_date.year
             current_month = current_date.month
 
-            playlist_ID = getSpotifyID(playlist['playlist'])
+            playlist_ID = getSpotifyID(playlist['playlist']) #FIX THIS
 
             # Get top 10 users and their number of songs added for the current month for the specified playlist
             cur.execute("""
@@ -293,7 +311,7 @@ async def localreactChamp(ctx):
                 member = guild.get_member(message[3])
 
                 # Get track name and artist(s)
-                trackID = getSpotifyID(message[2])
+                trackID = getSpotifyID(message[2]) #FIX THIS
                 nameAndArtist = playlist_update.get_track_name_and_artist(trackID)
 
                 #will need username and link maybe?
@@ -374,7 +392,7 @@ async def grabPast(ctx):
             file1.close()
 
             # Get messages from each channel 
-            messages = await fetch_message_history(playlist['channel'])
+            messages = await fetch_message_history(playlist['channel']) #FIX THIS
 
             # Loop through messages that contain spotify links
             word = "https://open.spotify.com/track"
@@ -397,9 +415,19 @@ async def grabPast(ctx):
 
 @bot.event
 async def on_message(msg):
-    with open(SECRET_DATABASE, 'r') as setupf: #must reopen the file to check if flag has been updated
-                    data = json.load(setupf)
-                    grab_past_flag = (data['grab_past_flag'])
+    config_data = config_tools.config_data()
+    grab_past_flag = config_data['grab_past_flag']
+    playlist_channel = config_data['pc']
+    
+    #gets channels from playlist channel
+    channels = await channel_tools.return_channels(playlist_channel=playlist_channel)
+
+    #gets checks if message was sent in a channel spotbot is tracking
+    valid_channel_flag = await channel_tools.is_message_in_valid_channel(message=msg, channels=channels)
+    
+    if(valid_channel_flag == True):
+    #once again, all the file work can be moved over to the dupCheck() function for single file handling
+        strCheck = "https://open.spotify.com/track"
 
     # Loop through available playlists
     for playlist in PLAYLIST_CHANNEL:
@@ -427,7 +455,7 @@ async def on_message(msg):
                         await msg.add_reaction (rEmoji)
                     else:
                         # Once added to DB send to spotify to add to playlist
-                        print(pgrm_signature + playlist_update.sendOff(playlist_link))
+                        print(pgrm_signature + playlist_update.sendOff(msg=msg))
                         await msg.add_reaction(checkEmoji) #adds emoji when song is added to playlist
 
                         # Warn users that previous songs may not be accounted for as grabPast has NOT been called
@@ -464,7 +492,8 @@ async def on_message(msg):
 
             # Return True to show success and break from any loops
             return True
-
+    else:
+        print(pgrm_signature + "Not valid Spotify channel: " + str(msg.channel.id) + " | spotbot looking at channels: " + str(channels))
 
 
 @bot.command()

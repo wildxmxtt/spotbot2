@@ -113,6 +113,7 @@ async def emojiCheck(msg):
         return False
     else: 
         return True
+    
 async def is_message_in_valid_channel(message, channels):
     if message.channel.id in channels:
         return True

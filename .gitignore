@@ -25,8 +25,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-databases
-setup.json
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
@@ -165,11 +164,4 @@ setup.json
 playlist.txt
 .vscode/settings.json
 spotify.json
-setup.json
-setup.json
-setup.json
 secrets.db
-spotify.json
-spotify.json
-spotify.json
-tst.py

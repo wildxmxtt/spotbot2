@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>View SQLite Database</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <!-- Return to home button at the top -->
+    <form action="{{ url_for('index') }}" style="margin-bottom: 20px;">
+        <button type="submit">Return to Home</button>
+    </form>
+
+    <h1>SQLite Database Contents</h1>
+
+    <!-- Dropdown to select table -->
+    <form method="post">
+        <input type="text" name="clear_table_input" placeholder="Type DELETE to clear table">
+        <button type="submit">Submit</button>
+        <label for="table">Select a table:</label>
+        <select name="table" id="table">
+            {% for table in tables %}
+                <option value="{{ table }}" {% if table == selected_table %}selected{% endif %}>
+                    {{ table }}
+                </option>
+            {% endfor %}
+        </select>
+        <button type="submit">View Table</button>
+    </form>
+
+    {% if selected_table %}
+        <h2>Data from {{ selected_table }}</h2>
+        <table border="1">
+            <thead>
+                <tr>
+                    {% for col_name in column_names %}
+                        <th>{{ col_name }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in data %}
+                <tr>
+                    {% for col in row %}
+                        <td>{{ col }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+
+</body>
+</html>

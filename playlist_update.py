@@ -9,91 +9,52 @@ import supporting_scripts.channel_tools as channel_tools
 import re, datetime
 
 
-
+pgrm_signature = "playlist_update.py: "
 SECRET_DATABASE = 'setup.json'
+
 def sendOff(msg=None): 
-    pgrm_signature = "playlist_update.py: "
-
-    #opens the setup.json file
-    # with open("setup.json", 'r') as info:
-    #     data = json.load(info)
-    #     playlist_link = (data['playlist_link']) 
-    #     client_id = (data['client_id'])
-    #     client_secret = (data['client_secret'])
-
     config_data = config_tools.config_data()
-    client_id = (config_data['client_id'])
-    client_secret = (config_data['client_secret'])
-    playlist_channel = (config_data['pc'])
+    playlist_channel = (config_data['playlist_channel'])
+    init_spotify_flag = config_data['init_spotify_flag']
 
-    open('spotify.json', 'w+').close() #clears old token info if there is any
+    # Keep the user from having to et a new token manually every hour
+    sp = refresh_sp(init_spotify_flag)
 
-    file1 = open("spotify.json", "a") #prepares file to be written to 
-
-    file2 = open(".cache", "r+")#reads the cached file 
-    rline2 = file2.readlines()
-    for line in rline2:
-        content = line
-
-        file1.write(content)#writes the content into the json file
-        
-    file1.close()
-
-    data, TOKEN, refresh_token, expires_at = get_spotify_json()
-        
-    now = int(time.time())#gets the current time
-
-    sp = get_spotify_api_object(now, data, TOKEN, refresh_token, expires_at) 
-
-    time_left = expires_at - now #finds out how much time is left on the token
-
-    print(pgrm_signature + "the time left on orginial token is: "+ str(time_left / 60) + "min")
-    if(is_expried): #if token is expried, get a new token with the refresh token
-        sp = spotipy.Spotify(auth=refesh_the_token())#Refreshes the token from now on after 
-    else:
-        sp = spotipy.Spotify(auth=TOKEN) #creates object that interacts with spotify api; uses the first token generated; token only last 1 hour
-
-    #chop playlist link into uri format
-    #replace x, with y
-    #Ex: line.replace(x,y)
+    # Get the playlist link associated with the channel
     playlist_link = channel_tools.return_playlist_from_channel(sent_channel=msg.channel.id, playlist_channel=playlist_channel)
-    #decide where song is going to go
-    #return playlist link
     
+    # Get the song link from within the message
+    song_link = song_link_extract(msg)
 
-    fline = playlist_link.replace("https://open.spotify.com/playlist/", "")#deletes first part of the link
-    PLAYLISTID = fline.split("?", 1)[0]
-    #PLAYLISTID = (fline.split("?si")[0]) #cuts off exess info from the link
+    # Returns uri link format
+    song_uri = link_clean(song_link)
 
-    tracks = ["blankfaketrack"] #needed to have one space in the array
-    file = open("uri.txt", "r") #open uri text file
-    rline = file.readlines()
-        
-    #loops through the entire file and only adds one songs at a time to the array
-    for line in reversed(list(rline)):
-        if "spotify:track:" in line:
-            tracks[0] = (line.strip()) #adds to the first element over and over again
-            sp.playlist_add_items(playlist_id=PLAYLISTID, items=[tracks][0]) #adds to the actual playlist
-    f = open('uri.txt', 'r+')
-    f.truncate(0) 
-    return "Playlist update request was sent and went through!"
+    # Gets song id
+    song_id = return_song_id(song_uri)
+
+    # Get the playlist ID
+    playlist_ID = get_playlist_id(playlist_link)
+
+    tracks = []
+    tracks.append(song_id)
+
+    # add the song to the playlist using the SP object
+    sp.playlist_add_items(playlist_ID, tracks)
+
+    return f'{pgrm_signature}: Playlist update {playlist_link} was sent and went through!'
 
 
 # This places in app.py because of the use of spotipy
 # Returns the hours of songs in the playlist
 def get_playlist_duration(playlist_link):
     # Set up authentication
-    # client_credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
-    # sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
-
     playlist_ID = playlist_link.split('/')[-1].split('?')[0]
 
-    data, TOKEN, refresh_token, expires_at = get_spotify_json() #check out new spotify.json
+    # data, TOKEN, refresh_token, expires_at = get_spotify_json() #check out new spotify.json   
+    config_data = config_tools.config_data()
+    init_spotify_flag = config_data['init_spotify_flag']
 
-        
-    now = int(time.time())#gets the current time
-
-    sp = get_spotify_api_object(now, data, TOKEN, refresh_token, expires_at) #try to check out new spotify.json for this
+    sp = refresh_sp(init_spotify_flag)
 
     # get all tracks from the playlist
     results = sp.playlist_items(playlist_ID)
@@ -112,8 +73,6 @@ def get_playlist_duration(playlist_link):
     
     return duration_hours
 
-#sendOff() used to debug file
-
 
 def link_clean(link: str) -> str:
     # Split the link by "/" and take the last part (the ID)
@@ -128,7 +87,7 @@ def return_song_id(link: str) -> str:
     track_id = track_id.split('?')[0]
     return track_id
 
-def return_playlist_id(playlist_link):
+def get_playlist_id(playlist_link):
     fline = playlist_link.replace("https://open.spotify.com/playlist/", "")#deletes first part of the link
     PLAYLISTID = fline.split("?", 1)[0]
     return PLAYLISTID
@@ -254,15 +213,12 @@ def refresh_the_token(client_id, client_secret):
             return TOKEN #last ditch to try and make it work if TOKEN varaible is still active
 
 
-def refesh_sp(init_spotify_token_flag): 
-    pgrm_signature = "playlist_update.py: "
+def refresh_sp(init_spotify_flag): 
     #get default config data
     config_data = config_tools.config_data()
     client_id = (config_data['client_id'])
     client_secret = (config_data['client_secret'])
     
-
-
     #gets spotify.json data
     with open("spotify.json", 'r') as info: #reads the json file that was just written to 
         data = json.load(info)
@@ -271,7 +227,7 @@ def refesh_sp(init_spotify_token_flag):
         TOKEN = (data['access_token'])
     
     #converts our .cache file to a json for easier processing, have part of the code set this to false after first time
-    cache_2_json(init_spotify_token_flag=init_spotify_token_flag) #call this in the spotbot.py file main need to improve token
+    cache_2_json(init_spotify_token_flag=init_spotify_flag) #call this in the spotbot.py file main need to improve token
     
     now = int(time.time())#gets the current time 
     #dealing with unix time for now & expires in
@@ -303,33 +259,3 @@ def song_link_extract(msg):
     song = match.group(0) if match else None
     
     return song
-
-def sendOff2(msg):
-    config_data = config_tools.config_data()
-    playlist_channel = config_data['pc']
-    pgrm_signature = "playlist_update.py: "
-    init_spotify_token_flag = config_data['init_spotify_flag']
-    #This function keep the user from having to get a new token manually every hour
-    sp = refesh_sp(init_spotify_token_flag=init_spotify_token_flag)
-    
-    #gets the playlist link assoicated with a channel
-    playlist_link = channel_tools.return_playlist_from_channel(sent_channel=msg.channel.id, playlist_channel=playlist_channel)
-
-    #gets the link from the message
-    song_link = song_link_extract(msg=msg)
-
-    #cleans song link and returns uri
-    song_uri = link_clean(link=song_link)
-    
-    #gets just the song id from the uri
-    song_id = return_song_id(link=song_uri)
-
-    #gets playlist id
-    PLAYLISTID = return_playlist_id(playlist_link=playlist_link)
-
-    tracks = [] #needed to have one space in the array
-    tracks.append(song_id)
-        
-    #sends a list of tracks off
-    sp.playlist_add_items(playlist_id=PLAYLISTID, items=tracks) #adds to the actual playlist
-    return "Playlist update " + str(playlist_link) + " request was sent and went through!" + pgrm_signature

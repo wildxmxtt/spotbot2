@@ -20,15 +20,13 @@ pgrm_signature = "spotbot.py: "
 SECRET_DATABASE = 'setup.json'
 
 # Sets up our secret information into the application from secrets.db
-secret_setup_info = database_tools.get_setup_info(SECRET_DATABASE)
-CLIENT_ID = secret_setup_info['client_id']
-CLIENT_SECRET = secret_setup_info['client_secret']
-TOKEN = secret_setup_info['discord_token']
-grab_past_flag = secret_setup_info['grab_past_flag']
-LEADERBOARD = secret_setup_info['installed_features']['leaderboard']
-PLAYLIST_CHANNEL = secret_setup_info['playlist_channel']
 config_data = config_tools.config_data()
-playlist_channel = config_data['pc']
+CLIENT_ID = config_data['client_id']
+CLIENT_SECRET = config_data['client_secret']
+TOKEN = config_data['discord_token']
+grab_past_flag = config_data['grab_past_flag']
+LEADERBOARD = config_data['installed_features']['leaderboard']
+PLAYLIST_CHANNEL = config_data['playlist_channel']
 
 
 intents = discord.Intents.all()
@@ -119,7 +117,7 @@ async def r(ctx):
 @bot.command()
 async def leaderboard(ctx):
     # Check if the leaderboard information is enabled via setup.json
-    if leaderboard == 0: return False
+    if LEADERBOARD == 0: return False
 
     # Connect to the SQLite Database
     conn = sqlite3.connect('databases/spotbot.db')
@@ -147,7 +145,7 @@ async def leaderboard(ctx):
 @bot.command()
 async def thismonth(ctx):
     # Check if the leaderboard information is enabled via setup.json
-    if leaderboard == 0: return False
+    if LEADERBOARD == 0: return False
 
     # Connect to the SQLite Database
     conn = sqlite3.connect('databases/spotbot.db')
@@ -182,7 +180,7 @@ async def thismonth(ctx):
 @bot.command()
 async def reactChamp(ctx):
     # Check if the leaderboard information is enabled via setup.json
-    if leaderboard == 0: return False
+    if LEADERBOARD == 0: return False
 
     # warn user this may take a while
     await ctx.send(f"Grabbing messages - this may take a while...")
@@ -239,7 +237,6 @@ async def reactChamp(ctx):
         trackID = getSpotifyID(message[2]) #FIX THIS
         nameAndArtist = playlist_update.get_track_name_and_artist(trackID)
 
-        #will need username and link maybe?
         field_value = f"{message[1]} reaction(s) - "
         field_value += f"[{nameAndArtist}]({message[2]})"
         embed.add_field(name=f"{loops}. {member.display_name}", value=field_value, inline=False)
@@ -314,7 +311,6 @@ async def localreactChamp(ctx):
                 trackID = getSpotifyID(message[2]) #FIX THIS
                 nameAndArtist = playlist_update.get_track_name_and_artist(trackID)
 
-                #will need username and link maybe?
                 field_value = f"{message[1]} reaction(s) - "
                 field_value += f"[{nameAndArtist}]({message[2]})"
                 embed.add_field(name=f"{loops}. {member.display_name}", value=field_value, inline=False)
@@ -372,11 +368,8 @@ async def sendLeaderBoardEmbed(ctx, results, title):
 #This is to grab the past songs that have been sent to the channel
 @bot.command()
 async def grabPast(ctx):
-    with open(SECRET_DATABASE, 'r') as setupf: #must reopen the file to check if flag has been updated
-                    data = json.load(setupf)
-                    grab_past_flag = (data['grab_past_flag'])
-
-    client = discord.Client(intents=intents)
+    config_data = config_tools.config_data()
+    grab_past_flag = config_data['grab_past_flag']
 
     if(grab_past_flag) == 1:
         await ctx.reply("grabPast has already been called. If this is a mistake please go to the setup.json file and set grab_past_flag to 0")
@@ -417,12 +410,11 @@ async def grabPast(ctx):
 async def on_message(msg):
     config_data = config_tools.config_data()
     grab_past_flag = config_data['grab_past_flag']
-    playlist_channel = config_data['pc']
     
     #gets channels from playlist channel
-    channels = await channel_tools.return_channels(playlist_channel=playlist_channel)
+    channels = await channel_tools.return_channels(playlist_channel=PLAYLIST_CHANNEL)
 
-    #gets checks if message was sent in a channel spotbot is tracking
+    #checks if message was sent in a channel spotbot is tracking
     valid_channel_flag = await channel_tools.is_message_in_valid_channel(message=msg, channels=channels)
     
     if(valid_channel_flag == True):
@@ -572,16 +564,17 @@ def dupCheck(msg, playlist_link):
 
     # If a match is found
     if matches:
-        print(pgrm_signature + 'String', string1, 'Found In song database')
-        print(pgrm_signature + "DUPLICATE LINK FOUND, NOT ADDED TO PLAYLIST FILE")
+        print(f'{pgrm_signature}: Song {string1} found In song database')
+        print(f'{pgrm_signature}: DUPLICATE LINK FOUND, NOT ADDED TO PLAYLIST FILE')
         return True # EXIT and return true; this is infact a duplicate
     else: # If a match is not found
-        print(pgrm_signature + 'String', string1 , 'Not Found')
-
         # Add the song ID into the database
         cur.execute("INSERT INTO songs (spotify_ID, playlist_ID, sender_ID, timestamp, discord_message_id) VALUES (?, ?, ?, ?, ?)", 
                     (stripped, playlist_ID, getSender(msg), getTimestamp(msg), getMessageID(msg)))
         conn.commit()
+        
+        print(pgrm_signature + 'String', string1 , 'Not Found')
+
 
     # Add to the uri.txt file to be sent off
     uritxt(msg.content)
@@ -590,9 +583,8 @@ def dupCheck(msg, playlist_link):
     conn.close()
 
 def uritxt(link):
-    with open(SECRET_DATABASE, 'r') as setupf: #must reopen the file to check if flag has been updated
-                    data = json.load(setupf)
-                    grab_past_flag = (data['grab_past_flag'])
+    config_data = config_tools.config_data()
+    grab_past_flag = config_data['grab_past_flag']
 
     print(pgrm_signature + "Writting to uri.txt..... \n")
     
@@ -660,7 +652,7 @@ def update_gp_flag():
         # "grab_past_flag" : 0
         dictObj.update({"grab_past_flag": 1})
     
-        with open(secret_setup_info, 'w') as json_file:
+        with open(SECRET_DATABASE, 'w') as json_file:
             json.dump(dictObj, json_file, 
                         indent=4,  
                         separators=(',',': '))
@@ -700,8 +692,5 @@ def getSpotifyID(playlist_link):
 
 # Initialize the database if not created yet
 database_tools.initialize_milestones('databases/spotbot.db', PLAYLIST_CHANNEL)
-
-# Refresh the token upon startup
-playlist_update.startup_token_refresh()
 
 bot.run(TOKEN)

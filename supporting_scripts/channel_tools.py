@@ -57,7 +57,7 @@ async def search_past(ctx, enabled=False, channel=""):
                     #if it dose not have a spotbot emoji, assume false and attempt to add: NOTE add later check to verify in db that song has NOT been added
                     if has_spotbot_emoji == False:
                             try:
-                                playlist_update.sendOff2(msg=msg)
+                                playlist_update.sendOff(msg=msg)
                             except Exception as e:
                                 config_tools.logs(message="Error when sending song off to spotify: " + str(e), log_file=r'logs/error.log')       
                             try:

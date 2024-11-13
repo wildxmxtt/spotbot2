@@ -17,7 +17,7 @@ def sendOff(msg=None):
     playlist_channel = (config_data['playlist_channel'])
     init_spotify_flag = config_data['init_spotify_flag']
 
-    # Keep the user from having to et a new token manually every hour
+    # Keep the user from having to get a new token manually every hour
     sp = refresh_sp(init_spotify_flag)
 
     # Get the playlist link associated with the channel

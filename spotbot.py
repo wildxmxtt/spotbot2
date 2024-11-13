@@ -49,7 +49,7 @@ async def on_ready():
             channel_ctx = bot.get_channel(channel)
             if channel_ctx is not None:
                     await channel_ctx.send("Bot is now online! Validating messages [WIP]")  # Message to send on startup
-                    await channel_tools.search_past(enabled=True, ctx=channel_ctx, channel=channel)
+                    await search_past(enabled=True, ctx=channel_ctx, channel=channel)
                     await channel_ctx.send("Validate lost songs complete! [WIP]")  # Message to send on startup
             else:
                 print("Channel not found. Please check the channel | ID:" + channel)
@@ -396,7 +396,7 @@ async def grabPast(ctx):
             # send off the spotifyIDs file to be uploaded to Spotify
             print(pgrm_signature + "Uri text file written to succesfully!\n")
             print(pgrm_signature + "Sending songs off to spotify")
-            print(pgrm_signature + playlist_update.sendOff(playlist['channel']))
+            print(pgrm_signature + playlist_update.sendOff(ctx))
     
         # send a success after the loop
         await ctx.send("Messages Grabbed, Process Complete, FINISHED" + "\n Here is the Spotify Link: " + playlist['channel'])
@@ -538,6 +538,45 @@ async def fetch_message_history(channel_ID):
         print(f"An error occurred while fetching history for channel {channel.id}: {e}")
 
     return messages
+
+async def search_past(ctx, enabled=False, channel=""):
+    if(enabled == True):
+        word = "https://open.spotify.com/track"
+
+        config_tools.logs("Grabbing past messages.....", log_file=r'logs/channel_tools.log')
+        messages = [messages async for messages in ctx.history(limit=500000)] #If your bot is not reading all of your messages this number may have to be higher
+
+        # to make it work with only one file, surprisingly all the playlist file handling is done in dupCheck()
+        for msg in messages:
+            try:
+                if word in msg.content:
+                    # Get the song link from within the message
+                    songlink = playlist_update.song_link_extract(word)
+
+                    # Get the playlist link associate with the channel
+                    playlist_link = channel_tools.return_playlist_from_channel(sent_channel=msg.channel.id, playlist_channel=PLAYLIST_CHANNEL)
+                    check = dupCheck(songlink, playlist_link) #checks to see if the correct emoji is on the message
+                    
+                    # If the song is not a duplicate, add to the playlist
+                    if check == False:
+                        try:
+                            playlist_update.sendOff(msg)
+                        except Exception as e:
+                            config_tools.logs(message="Error when sending song off to spotify: " + str(e), log_file=r'logs/error.log')
+
+            #if the dupcheck check fails
+            except discord.NotFound:
+                config_tools.logs(message=f"{pgrm_signature}: Message with ID {msg.id} not found", log_file=r'logs/error.log')
+            except discord.Forbidden:
+                config_tools.logs(message=f"{pgrm_signature}:  Bot doesn't have permission to fetch message {msg.id}", log_file=r'logs/error.log')
+            except discord.HTTPException:
+                config_tools.logs(message=f"{pgrm_signature}: Failed to fetch message {msg.id}", log_file=r'logs/error.log')
+            except Exception as e:
+                config_tools.logs(message="Error whist fetching emoji: " + str(e), log_file=r'logs/error.log')
+                
+    
+        config_tools.logs("Grabbed past messages", log_file=r'logs/channel_tools.log')
+        print("Past finished searching for channel " + str(channel))
 
 
 #checks for duplicates before sending songs off to uri.txt and recording in database

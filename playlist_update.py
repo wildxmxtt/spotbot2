@@ -251,7 +251,7 @@ def refresh_sp(init_spotify_flag):
 #extracts a song from a message object
 def song_link_extract(msg):
     # Regular expression to match Spotify links
-    pattern = r"https?://open\.spotify\.com/track/\w+\?si=\w+"
+    pattern = r"https://open.spotify.com/track/[\w\d]+"
     
     # Search for the pattern in the provided text
     match = re.search(pattern, msg.content)

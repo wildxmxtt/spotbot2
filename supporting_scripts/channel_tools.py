@@ -38,7 +38,7 @@ def check_channels_on_boot(enabled=False, startup_flag=False, playlist_w_channel
 #grab past ish
 
 
-async def search_past(ctx, enabled=False, channel=""):
+async def search_pastOLD(ctx, enabled=False, channel=""):
     if(enabled == True):
         word = "https://open.spotify.com/track"
         # await ctx.reply("Grabbing songs now please wait until FINISHED is sent")
@@ -123,14 +123,14 @@ async def is_message_in_valid_channel(message, channels):
 async def return_channels(playlist_channel):
     channels = [] #makes an array of channels
     for item in playlist_channel:
-        channel = int(playlist_channel[item]['channel']) #gets all channels from dict
+        channel = int(item["channel"]) # Get the channel 
         channels.append(channel) #appends channel to array
     return channels #retruns all channel w/o playlist links 
 
 async def return_playlists(playlist_channel):
     playlists_links = [] #makes an array for all playlist items
     for item in playlist_channel:
-        playlist = str(playlist_channel[item]['playlist'])
+        playlist = str(item["playlist"]) # Get the playlist link
         playlists_links.append(playlist) #appends all playlist items to an array
     return playlists_links #retruns all playlist links w/o channel
     
@@ -139,9 +139,9 @@ async def return_playlists(playlist_channel):
 #what channel has that playlist associated with it 
 def return_playlist_from_channel(sent_channel, playlist_channel):
     for item in playlist_channel:
-        channel = playlist_channel[item]['channel']
+        channel = item['channel']
         if int(sent_channel) == int(channel):
-            playlist_link = playlist_channel[item]['playlist']
+            playlist_link = item['playlist']
     return playlist_link
 
 

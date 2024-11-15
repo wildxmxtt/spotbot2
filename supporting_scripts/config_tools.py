@@ -11,7 +11,7 @@ def config_data():
         playlist_channel = (data['playlist_channel'])
         # playlist_link = (data['playlist_link'])
         grab_past_flag = (data['grab_past_flag'])
-        use_init_spotify_token = (data['use_init_spotify_token'])
+        use_init_spotify_flag = (data['use_init_spotify_flag'])
         check_past_on_boot = (data['check_past_on_boot'])
         # discord_channel = (data['discord_channels'])
 
@@ -24,7 +24,7 @@ def config_data():
         'client_secret': client_secret,
         'grab_past_flag': grab_past_flag,
         'pc': pc, 
-        'init_spotify_flag': use_init_spotify_token,
+        'init_spotify_flag': use_init_spotify_flag,
         'check_past_on_boot': check_past_on_boot
     }
 

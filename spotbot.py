@@ -20,7 +20,8 @@ pgrm_signature = "spotbot.py: "
 SECRET_DATABASE = 'setup.json'
 
 # Sets up our secret information into the application from secrets.db
-config_data = config_tools.config_data()
+file = open(SECRET_DATABASE, 'r')
+config_data = json.load(file)
 CLIENT_ID = config_data['client_id']
 CLIENT_SECRET = config_data['client_secret']
 TOKEN = config_data['discord_token']
@@ -550,12 +551,9 @@ async def search_past(ctx, enabled=False, channel=""):
         for msg in messages:
             try:
                 if word in msg.content:
-                    # Get the song link from within the message
-                    songlink = playlist_update.song_link_extract(word)
-
                     # Get the playlist link associate with the channel
                     playlist_link = channel_tools.return_playlist_from_channel(sent_channel=msg.channel.id, playlist_channel=PLAYLIST_CHANNEL)
-                    check = dupCheck(songlink, playlist_link) #checks to see if the correct emoji is on the message
+                    check = dupCheck(msg, playlist_link) #checks to see if the correct emoji is on the message
                     
                     # If the song is not a duplicate, add to the playlist
                     if check == False:
@@ -572,7 +570,7 @@ async def search_past(ctx, enabled=False, channel=""):
             except discord.HTTPException:
                 config_tools.logs(message=f"{pgrm_signature}: Failed to fetch message {msg.id}", log_file=r'logs/error.log')
             except Exception as e:
-                config_tools.logs(message="Error whist fetching emoji: " + str(e), log_file=r'logs/error.log')
+                config_tools.logs(message="Error whilst checking for duplicate: " + str(e), log_file=r'logs/error.log')
                 
     
         config_tools.logs("Grabbed past messages", log_file=r'logs/channel_tools.log')
@@ -581,7 +579,7 @@ async def search_past(ctx, enabled=False, channel=""):
 
 #checks for duplicates before sending songs off to uri.txt and recording in database
 def dupCheck(msg, playlist_link):
-    string1 = msg.content
+    songlink = playlist_update.song_link_extract(msg)
     
     # opening a text files (new)
     conn = sqlite3.connect('databases/spotbot.db')
@@ -592,7 +590,7 @@ def dupCheck(msg, playlist_link):
     # https://open.spotify.com/track/2XgTw2co6xv95TmKpMcL70?si=dbe7fd4a016344ec
     # https://open.spotify.com/track/2XgTw2co6xv95TmKpMcL70?si=8fe74b50ad804b52
     sep = '?'
-    stripped = string1.split(sep, 1)[0]
+    stripped = songlink.split(sep, 1)[0]
 
     # Attempt to select spotify_ID
     # input sanitization - https://realpython.com/prevent-python-sql-injection/
@@ -603,7 +601,7 @@ def dupCheck(msg, playlist_link):
 
     # If a match is found
     if matches:
-        print(f'{pgrm_signature}: Song {string1} found In song database')
+        print(f'{pgrm_signature}: Song {songlink} found In song database')
         print(f'{pgrm_signature}: DUPLICATE LINK FOUND, NOT ADDED TO PLAYLIST FILE')
         return True # EXIT and return true; this is infact a duplicate
     else: # If a match is not found
@@ -612,11 +610,7 @@ def dupCheck(msg, playlist_link):
                     (stripped, playlist_ID, getSender(msg), getTimestamp(msg), getMessageID(msg)))
         conn.commit()
         
-        print(pgrm_signature + 'String', string1 , 'Not Found')
-
-
-    # Add to the uri.txt file to be sent off
-    uritxt(msg.content)
+        print(pgrm_signature + 'String', songlink , 'Not Found')
 
     # Close the connection to the database
     conn.close()

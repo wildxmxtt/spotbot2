@@ -2,33 +2,12 @@ from datetime import datetime
 import json
 import time, os
 
-def config_data():
-    with open("setup.json", 'r') as setupf:
+def config_data(file):
+    with open(file, 'r') as setupf:
         data = json.load(setupf)
-        TOKEN = (data['discord_token'])
-        client_id = (data['client_id'])
-        client_secret = (data['client_secret'])
-        playlist_channel = (data['playlist_channel'])
-        # playlist_link = (data['playlist_link'])
-        grab_past_flag = (data['grab_past_flag'])
-        use_init_spotify_flag = (data['use_init_spotify_flag'])
-        check_past_on_boot = (data['check_past_on_boot'])
-        # discord_channel = (data['discord_channels'])
 
-    pc = playlist_w_channel_setup(playlist_channel)
-
-    #data dict to use throughout program
-    data_dict = {
-        'discord_token': TOKEN,
-        'client_id': client_id,
-        'client_secret': client_secret,
-        'grab_past_flag': grab_past_flag,
-        'pc': pc, 
-        'init_spotify_flag': use_init_spotify_flag,
-        'check_past_on_boot': check_past_on_boot
-    }
-
-    return data_dict
+    file.close()
+    return data
 
 
 #function to setup channel playlist relationships from json here

@@ -20,8 +20,7 @@ pgrm_signature = "spotbot.py: "
 SECRET_DATABASE = 'setup.json'
 
 # Sets up our secret information into the application from secrets.db
-file = open(SECRET_DATABASE, 'r')
-config_data = json.load(file)
+config_data = config_tools.config_data(SECRET_DATABASE)
 CLIENT_ID = config_data['client_id']
 CLIENT_SECRET = config_data['client_secret']
 TOKEN = config_data['discord_token']
@@ -39,7 +38,7 @@ bot = commands.Bot(command_prefix='!', case_insensitive=True, intents=intents)
 
 @bot.event
 async def on_ready():
-    config_data = config_tools.config_data()
+    config_data = config_tools.config_data(SECRET_DATABASE)
     check_past_on_boot = config_data['check_past_on_boot']
     #Lets programmer know that the bot has been activated
     print(pgrm_signature + 'SpotifyBot: ON')
@@ -79,10 +78,10 @@ async def hlp(ctx):
 #gives the link set in the setup.json file
 @bot.command()
 async def sLink(ctx):
-     config_data = config_tools.config_data()
-     playlist_channel = config_data['pc']
-     playlist_links = await channel_tools.return_playlists(playlist_channel=playlist_channel)
-     await ctx.reply(playlist_links)
+    config_data = config_tools.config_data(SECRET_DATABASE)
+    playlist_channel = config_data['pc']
+    playlist_links = await channel_tools.return_playlists(playlist_channel=playlist_channel)
+    await ctx.reply(playlist_links)
 
 #a request command to give the user back a random song from the playlist 
 @bot.command()
@@ -409,7 +408,7 @@ async def grabPast(ctx):
 
 @bot.event
 async def on_message(msg):
-    config_data = config_tools.config_data()
+    config_data = config_tools.config_data(SECRET_DATABASE)
     grab_past_flag = config_data['grab_past_flag']
     
     #gets channels from playlist channel

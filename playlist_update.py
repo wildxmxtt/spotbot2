@@ -13,6 +13,10 @@ pgrm_signature = "playlist_update.py: "
 SECRET_DATABASE = 'setup.json'
 
 def sendOff(msg=None): 
+
+    pgrm_signature = "playlist_update.py: "
+
+    
     config_data = config_tools.config_data(SECRET_DATABASE)
     playlist_channel = (config_data['playlist_channel'])
     init_spotify_flag = config_data['init_spotify_flag']
@@ -40,7 +44,7 @@ def sendOff(msg=None):
 
     # add the song to the playlist using the SP object
     sp.playlist_add_items(playlist_ID, tracks)
-
+    config_tools.logs(message=f'{pgrm_signature}: Playlist update {playlist_link} was sent and went through!')
     return f'{pgrm_signature}: Playlist update {playlist_link} was sent and went through!'
 
 
@@ -94,7 +98,7 @@ def get_playlist_id(playlist_link):
 
 #loads cache file into spotify json
 def cache_2_json(init_spotify_token_flag):
-    if(str(init_spotify_token_flag).upper() == 'TRUE'):
+    if(str(init_spotify_token_flag).upper() == 'TRUE'): #If true meaning the spotify.json file has never been populated before
         open('spotify.json', 'w+').close() #clears old token info if there is any
 
         file1 = open("spotify.json", "a") #prepares file to be written to 
@@ -147,16 +151,16 @@ def spotify_json_update(refresh_data):
     with open("spotify.json", 'r') as info: #reads the json file that was just written to 
         data = json.load(info)
         refresh_token = (data['refresh_token'])
+        access_token = refresh_data['access_token']
         scope = (data['scope'])
     info.close()
 
-
-    access_token = refresh_data['access_token']
     token_type= refresh_data['token_type']
     expires_in = refresh_data['expires_in']
     expires_at = calculate_expires_at(unix_time=expires_in) #gets when token will expire
     expires_at = expires_at #formats to unix time
 
+    #json data that will always be in the spotify token, update the values that need to be updated from refresh_data, and maintain all info from spotify.json that should be kept
     json_data = {
         "access_token" : access_token,
         "token_type": token_type,
@@ -209,25 +213,35 @@ def refresh_the_token(client_id, client_secret):
             print(pgrm_signature + "the time left on new token is: "+ str(new_expire / 60) + "min") #says how long
             return response_json
         else:
+            config_tools.logs("ERROR! when attempting to run refresh_the_token()! The response we got was: "+ str(response))
             print(pgrm_signature + "ERROR! The response we got was: "+ str(response))
-            return TOKEN #last ditch to try and make it work if TOKEN varaible is still active
+            return
+            # return TOKEN #last ditch to try and make it work if TOKEN varaible is still active
 
 
 def refresh_sp(init_spotify_flag): 
     #get default config data
-    config_data = config_tools.config_data()
+    config_data = config_tools.config_data('setup.json')
     client_id = (config_data['client_id'])
     client_secret = (config_data['client_secret'])
     
+
     #gets spotify.json data
-    with open("spotify.json", 'r') as info: #reads the json file that was just written to 
-        data = json.load(info)
-        expires_in = (data['expires_in'])
-        expires_at = (data['expires_at'])
-        TOKEN = (data['access_token'])
-    
+    if(str(init_spotify_flag).upper() == "FALSE"):
+        with open("spotify.json", 'r') as info: #reads the json file that was just written to 
+            data = json.load(info)
+            expires_in = (data['expires_in'])
+            expires_at = (data['expires_at'])
+            TOKEN = (data['access_token'])
+    else:
+        #if the init spotify flag has not be set to true yet, have the .cache file write to spotify.json
+        cache_2_json(init_spotify_token_flag=init_spotify_flag) #call this in the spotbot.py file main need to improve token
+        with open("spotify.json", 'r') as info: #reads the json file that was just written to 
+            data = json.load(info)
+            expires_in = (data['expires_in'])
+            expires_at = (data['expires_at'])
+            TOKEN = (data['access_token'])
     #converts our .cache file to a json for easier processing, have part of the code set this to false after first time
-    cache_2_json(init_spotify_token_flag=init_spotify_flag) #call this in the spotbot.py file main need to improve token
     
     now = int(time.time())#gets the current time 
     #dealing with unix time for now & expires in

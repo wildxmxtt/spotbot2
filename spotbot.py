@@ -43,7 +43,7 @@ async def on_ready():
     #Lets programmer know that the bot has been activated
     print(pgrm_signature + 'SpotifyBot: ON')
     
-    if check_past_on_boot == True:
+    if str(check_past_on_boot).upper() == 'TRUE':
         for channel_item in config_data['playlist_channel']:
             channel = int(channel_item['channel'])
             channel_ctx = bot.get_channel(channel)
@@ -609,8 +609,8 @@ def dupCheck(msg, playlist_link):
                     (stripped, playlist_ID, getSender(msg), getTimestamp(msg), getMessageID(msg)))
         conn.commit()
         
-        print(pgrm_signature + 'String', songlink , 'Not Found')
-
+        print(pgrm_signature + 'NEW! | String', songlink , 'Not Found')
+        return False
     # Close the connection to the database
     conn.close()
 

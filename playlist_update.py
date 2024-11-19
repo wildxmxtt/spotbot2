@@ -13,7 +13,7 @@ pgrm_signature = "playlist_update.py: "
 SECRET_DATABASE = 'setup.json'
 
 def sendOff(msg=None): 
-    config_data = config_tools.config_data()
+    config_data = config_tools.config_data(SECRET_DATABASE)
     playlist_channel = (config_data['playlist_channel'])
     init_spotify_flag = config_data['init_spotify_flag']
 

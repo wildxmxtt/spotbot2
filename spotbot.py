@@ -44,8 +44,8 @@ async def on_ready():
     print(pgrm_signature + 'SpotifyBot: ON')
     
     if check_past_on_boot == True:
-        for channel_item in config_data['pc']:
-            channel = int(config_data['pc'][channel_item]['channel'])
+        for channel_item in config_data['playlist_channel']:
+            channel = int(channel_item['channel'])
             channel_ctx = bot.get_channel(channel)
             if channel_ctx is not None:
                     await channel_ctx.send("Bot is now online! Validating messages [WIP]")  # Message to send on startup
@@ -79,7 +79,7 @@ async def hlp(ctx):
 @bot.command()
 async def sLink(ctx):
     config_data = config_tools.config_data(SECRET_DATABASE)
-    playlist_channel = config_data['pc']
+    playlist_channel = config_data['playlist_channel']
     playlist_links = await channel_tools.return_playlists(playlist_channel=playlist_channel)
     await ctx.reply(playlist_links)
 
@@ -477,13 +477,13 @@ async def on_message(msg):
                         
                         conn.close()
 
-        else:            
-            print(pgrm_signature + "Not valid Spotify channel: " + str(msg.channel.id))
+        # else:            
+        #     print(pgrm_signature + "Not valid Spotify channel: " + str(msg.channel.id))
 
-            await bot.process_commands(msg)
+        #     await bot.process_commands(msg)
 
-            # Return True to show success and break from any loops
-            return True
+        #     # Return True to show success and break from any loops
+        #     return True
     else:
         print(pgrm_signature + "Not valid Spotify channel: " + str(msg.channel.id) + " | spotbot looking at channels: " + str(channels))
 

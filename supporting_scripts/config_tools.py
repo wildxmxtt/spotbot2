@@ -6,7 +6,7 @@ def config_data(file):
     with open(file, 'r') as setupf:
         data = json.load(setupf)
 
-    file.close()
+    setupf.close()
     return data
 
 

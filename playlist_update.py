@@ -55,7 +55,7 @@ def get_playlist_duration(playlist_link):
     playlist_ID = playlist_link.split('/')[-1].split('?')[0]
 
     # data, TOKEN, refresh_token, expires_at = get_spotify_json() #check out new spotify.json   
-    config_data = config_tools.config_data()
+    config_data = config_tools.config_data('setup.json')
     init_spotify_flag = config_data['init_spotify_flag']
 
     sp = refresh_sp(init_spotify_flag)
@@ -74,7 +74,7 @@ def get_playlist_duration(playlist_link):
 
     # Convert milliseconds to hours
     duration_hours = total_duration_ms / (1000 * 60 * 60)
-    
+    print(duration_hours)
     return duration_hours
 
 

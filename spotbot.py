@@ -60,7 +60,8 @@ async def on_ready():
 @bot.command()
 async def hlp(ctx):
     helpText = ("The commands for this bot go as follows: \n" + 
-        "[!]sLink (gives the user the link to the spotify playlist) \n" + 
+        "[!]sLink (gives the user the link to the spotify playlist that the channel is associated with) \n" + 
+        "[!]sLinkAll (gives the user the all of the links to the spotify playlists that spotbot is associated with) \n" + 
         "[!]grabPast (allows for the user to grab past songs sent in a chat, this can only be ran once) \n" +
         "[!]r (gives the user a random song from the playlist!) \n" +
         "[!]waves (generate Spotify's wave codes png image files.)\n")
@@ -80,8 +81,18 @@ async def hlp(ctx):
 async def sLink(ctx):
     config_data = config_tools.config_data(SECRET_DATABASE)
     playlist_channel = config_data['playlist_channel']
+    playlist_link = channel_tools.return_playlist_from_channel(sent_channel=ctx.channel.id, playlist_channel=playlist_channel)
+    #playlist_links = await channel_tools.return_playlists(playlist_channel=playlist_channel)
+    await ctx.reply(playlist_link)
+
+@bot.command()
+async def sLinkAll(ctx):
+    config_data = config_tools.config_data(SECRET_DATABASE)
+    playlist_channel = config_data['playlist_channel']
+    #playlist_link = channel_tools.return_playlist_from_channel(sent_channel=ctx.channel.id, playlist_channel=playlist_channel)
     playlist_links = await channel_tools.return_playlists(playlist_channel=playlist_channel)
     await ctx.reply(playlist_links)
+
 
 #a request command to give the user back a random song from the playlist 
 @bot.command()
@@ -486,10 +497,14 @@ async def on_message(msg):
         #     return True
     else:
         print(pgrm_signature + "Not valid Spotify channel: " + str(msg.channel.id) + " | spotbot looking at channels: " + str(channels))
+        await bot.process_commands(msg)
 
 
 @bot.command()
-async def waves(ctx, arg):
+async def waves(ctx, arg = None):
+    if(arg == None):
+        await ctx.channel.reply('User Must provide a spotify link argument for this command to work')
+        return
     for playlist in PLAYLIST_CHANNEL:
         # Command only functions within the global variable: discord_channel, specified in setup.json
         if ctx.channel.id == int(playlist['channel']):

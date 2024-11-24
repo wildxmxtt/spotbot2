@@ -8,8 +8,6 @@ def config_data(file):
 
     setupf.close()
     return data
-
-
 #function to setup channel playlist relationships from json here
 def playlist_w_channel_setup(playlist_channel):
     pc_relationship = {}

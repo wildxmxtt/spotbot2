@@ -117,7 +117,7 @@ def cache_2_json(init_spotify_token_flag):
             with open("setup.json", "r") as jsonFile:
                 data = json.load(jsonFile)
 
-            data["use_init_spotify_token"] = False
+            data["init_spotify_flag"] = False
 
             with open("setup.json", "w") as jsonFile:
                 json.dump(data, jsonFile, indent=4)
@@ -273,3 +273,18 @@ def song_link_extract(msg):
     song = match.group(0) if match else None
     
     return song
+
+def get_track_name_and_artist(trackID):
+
+    config_data = config_tools.config_data('setup.json')
+    init_spotify_flag = config_data['init_spotify_flag']
+
+    sp = refresh_sp(init_spotify_flag)
+
+    now = int(time.time())#gets the current time
+
+    track = sp.track(trackID)
+    artists = track['artists']
+    # {track['artists']['name']
+
+    return f"{track['name']} - {artists[0]['name']}"

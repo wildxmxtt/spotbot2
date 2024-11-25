@@ -89,6 +89,31 @@ async def sLink(ctx):
     await ctx.reply(str(channel.name) + "'s playlist is:" + playlist_link + " Discord Channel ID: " + str(channel_ID))
 
 @bot.command()
+async def search(ctx):
+    song_id_pattern = r"track/(.*?)\?"
+    spotify_link = str(ctx.content)
+    regex_result = re.search(song_id_pattern, spotify_link)
+    song_id = str(regex_result.group(1)) # I hate the re module
+    
+    # Connect to SQLite Database
+    conn = sqlite3.connect('databases/spotbot.db')
+    cur = conn.cursor()
+
+    current_date = datetime.now()
+    current_year = current_date.year
+    current_month = current_date.month
+
+    playlist_ID = channel_tools.return_playlist_from_channel(ctx.channel.id)
+
+    # Return all message IDs to find sender ID
+    cur.execute("""
+        SELECT discord_message_id
+        FROM songs
+        WHERE spotify_ID LIKE "%?%" AND playlist_ID = ?;
+        """, (song_id, playlist_ID,))
+
+
+@bot.command()
 async def sLinkAll(ctx):
     config_data = config_tools.config_data(SECRET_DATABASE)
     playlist_channel = config_data['playlist_channel']

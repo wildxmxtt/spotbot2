@@ -96,9 +96,9 @@ def emoji_list_match(list1, list2):
     else:
         return False
 
-async def addEmoji(msg, checkEmoji = "☑️"):
+async def addEmoji(msg, emoji = "☑️"):
     print(msg.content)
-    await msg.add_reaction (checkEmoji)
+    await msg.add_reaction (emoji)
 
 async def emojiCheck(msg):
     checkEmoji = "☑️"

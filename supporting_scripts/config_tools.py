@@ -2,7 +2,7 @@ from datetime import datetime
 import json
 import time, os
 
-def config_data(file):
+def config_data(file='setup.json'):
     with open(file, 'r') as setupf:
         data = json.load(setupf)
 

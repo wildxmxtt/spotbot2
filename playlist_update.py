@@ -13,6 +13,7 @@ pgrm_signature = "playlist_update.py: "
 SECRET_DATABASE = 'setup.json'
 
 def sendOff(msg=None): 
+    tracks = []
 
     pgrm_signature = "playlist_update.py: "
 
@@ -39,7 +40,6 @@ def sendOff(msg=None):
     # Get the playlist ID
     playlist_ID = get_playlist_id(playlist_link)
 
-    tracks = []
     tracks.append(song_id)
 
     # add the song to the playlist using the SP object
@@ -47,6 +47,42 @@ def sendOff(msg=None):
     config_tools.logs(message=f'{pgrm_signature}: Playlist update {playlist_link} was sent and went through!')
     return f'{pgrm_signature}: Playlist update {playlist_link} was sent and went through!'
 
+
+def sendOffList(channel, msgList): 
+    tracks = []
+    pgrm_signature = "playlist_update.py: "
+
+    
+    config_data = config_tools.config_data(SECRET_DATABASE)
+    playlist_channel = (config_data['playlist_channel'])
+    init_spotify_flag = config_data['init_spotify_flag']
+
+    # Keep the user from having to get a new token manually every hour
+    sp = refresh_sp(init_spotify_flag)
+
+    # Get the playlist link associated with the channel
+    playlist_link = channel_tools.return_playlist_from_channel(sent_channel=channel, playlist_channel=playlist_channel)
+    
+    for msg in msgList:
+        # Get the song link from within the message
+        song_link = song_link_extract(msg)
+
+        # Returns uri link format
+        song_uri = link_clean(song_link)
+
+        # Gets song id
+        song_id = return_song_id(song_uri)
+
+        # Get the playlist ID
+        playlist_ID = get_playlist_id(playlist_link)
+
+     
+        tracks.append(song_id)
+
+        # add the song to the playlist using the SP object
+    sp.playlist_add_items(playlist_ID, tracks)
+    config_tools.logs(message=f'{pgrm_signature}: Playlist update {playlist_link} was sent and went through!')
+    return f'{pgrm_signature}: Playlist update {playlist_link} was sent and went through!'
 
 # This places in app.py because of the use of spotipy
 # Returns the hours of songs in the playlist
@@ -252,7 +288,7 @@ def refresh_sp(init_spotify_flag):
 
     print(pgrm_signature + "the time left on the token is: "+ str(time_left / 60) + "min")
     
-    if(is_expried): #if token is expried, get a new token with the refresh token
+    if(int(time_left) < 2): #if token is 2 min away from expiring
         refreshed_info = refresh_the_token(client_id=client_id, client_secret=client_secret)
         spotify_json_update(refresh_data=refreshed_info) #updates spotify.json
         sp = spotipy.Spotify(auth=refreshed_info['access_token']) #Places the new refreshed token into the app

@@ -36,8 +36,8 @@ def logs(message, log_file = r'logs/default.log', pgrm_signature = __file__):
         with open(log_file, 'a') as f:
             f.write(now + ' - ' + message + " python file: " + pgrm_signature)
             f.write('\n')
-    except Exception as e:
-        print("Please make sure file exists in logs/<your_file_name.log>"+ e)
+    except FileNotFoundError as e:
+        print("Please make sure file exists in logs/<your_file_name.log>"+ str(e))
         time.sleep(60)
 
 

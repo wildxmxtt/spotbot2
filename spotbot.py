@@ -90,6 +90,7 @@ async def sLink(ctx):
 
 @bot.command()
 async def search(ctx):
+    print("[+] This shi' workin'!")
     # Regex for song ID in string argument
     song_id_pattern = r"track/(.*?)\?"
     spotify_link = str(ctx.content)

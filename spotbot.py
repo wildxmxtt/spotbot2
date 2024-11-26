@@ -90,6 +90,7 @@ async def sLink(ctx):
 
 @bot.command()
 async def search(ctx):
+    # Regex for song ID in string argument
     song_id_pattern = r"track/(.*?)\?"
     spotify_link = str(ctx.content)
     regex_result = re.search(song_id_pattern, spotify_link)
@@ -99,19 +100,33 @@ async def search(ctx):
     conn = sqlite3.connect('databases/spotbot.db')
     cur = conn.cursor()
 
-    current_date = datetime.now()
-    current_year = current_date.year
-    current_month = current_date.month
-
-    playlist_ID = channel_tools.return_playlist_from_channel(ctx.channel.id)
+    # Get current configured playlist for the Discord channel
+    playlist_id = channel_tools.return_playlist_from_channel(ctx.channel.id)
 
     # Return all message IDs to find sender ID
     cur.execute("""
         SELECT discord_message_id
         FROM songs
         WHERE spotify_ID LIKE "%?%" AND playlist_ID = ?;
-        """, (song_id, playlist_ID,))
+        """, (song_id, playlist_id,))
+    message_id = str(cur.fetchone())
+    
+    # Only attempt to fetch message if message ID exists in db
+    if message_id:
+        current_channel = ctx.channel.id
+        try:
+            channel = bot.get_channel(current_channel)
+        except:
+            ctx.reply("Channel not found.")
+        
+        try:
+            message = await channel.fetch_message(message_id)
+        except:
+            ctx.reply("The provided song cannot be found in the current channel.")
 
+        await message.reply("Song found!")
+    else:
+        ctx.reply("The provided song has yet to be added to the playlist.")
 
 @bot.command()
 async def sLinkAll(ctx):

@@ -221,7 +221,6 @@ def refresh_the_token(client_id, client_secret):
     pgrm_signature = "playlist_update.py: "
     with open("spotify.json", 'r') as info: #reads the json file that was just written to 
         data = json.load(info)
-        TOKEN = (data['access_token'])
         refresh_token = (data['refresh_token'])
             #This code was made possible by https://www.youtube.com/watch?v=-FsFT6OwE1A 
             #Notable timestamps 10:14, 40:25

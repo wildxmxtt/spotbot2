@@ -127,7 +127,11 @@ async def return_channels(playlist_channel):
         channels.append(channel) #appends channel to array
     return channels #retruns all channel w/o playlist links 
 
-async def return_playlists(playlist_channel):
+async def return_playlists(playlist_channel_id):
+    # Read the setup.json file
+    jFile = config_tools.config_data()
+    playlist_channel = jFile["playlist_channel"]
+
     playlists_links = [] #makes an array for all playlist items
     for item in playlist_channel:
         playlist = str(item["playlist"]) # Get the playlist link

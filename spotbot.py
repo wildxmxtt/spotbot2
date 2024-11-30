@@ -90,6 +90,7 @@ async def sLink(ctx):
 
 @bot.command()
 async def search(ctx):
+    # REGEX THE PLAYLIST ID
     print("[+] This shi' workin'!")
     # Regex for song ID in string argument
     song_id_pattern = r"track/(.*?)\?"
@@ -99,36 +100,43 @@ async def search(ctx):
         song_id = "%" + str(regex_result.group(1)) + "%" # I hate the re module
     except AttributeError as e:
         print("\033[35m[!] WARNING: Non-standard spotify link detected. Attempting another song ID search with a new regex pattern...\033[0m")
-        song_id_pattern = r"track/(.*?)"
+        song_id_pattern = r"track/(.*)"
         regex_result = re.search(song_id_pattern, spotify_link)
-        song_id = "%" + str(regex_result.group(1)) + "%" # I hate the re module
-
+        song_id = "https://open.spotify.com/track/" + str(regex_result.group(1)) # I hate the re module
     
+    # Get current configured playlist for the Discord channel
+    playlist_link = await channel_tools.return_playlists(ctx.channel.id)
+
+    playlist_id_pattern = r"playlist/(.*?)\?"
+    try:
+        playlist_regex_result = re.search(playlist_id_pattern, str(playlist_link[0])) # return_playlists returns a list
+        playlist_id = str(playlist_regex_result.group(1))
+    except AttributeError as e:
+        print("\033[35m[!] WARNING: Non-standard spotify playlist link detected. Attempting another playlist ID search with a new regex pattern...\033[0m")
+        playlist_id_pattern = r"playlist/(.*)"
+        playlist_regex_result = re.search(playlist_id_pattern, playlist_id)
+        playlist_id = str(playlist_regex_result.group(1))
     # Connect to SQLite Database
     conn = sqlite3.connect('databases/spotbot.db')
     cur = conn.cursor()
-
-    # Get current configured playlist for the Discord channel
-    playlist_id = await channel_tools.return_playlists(ctx.channel.id)
 
     # Return all message IDs to find sender ID
     cur.execute("""
         SELECT discord_message_id
         FROM songs
         WHERE spotify_ID LIKE ? AND playlist_ID = ?;
-        """, (song_id, playlist_id[0],))
-    message_id = str(cur.fetchone())
+        """, (song_id, playlist_id,))
+    message_id = cur.fetchone()
     
     # Only attempt to fetch message if message ID exists in db
-    if message_id:
+    if message_id != 'None':
         current_channel = ctx.channel.id
         try:
             channel = bot.get_channel(current_channel)
         except:
             await ctx.reply("Channel not found.")
-        
         try:
-            message = await channel.fetch_message(message_id)
+            message = await channel.fetch_message(message_id[0])
             await message.reply("Song found!")
         except:
             await ctx.reply("The provided song cannot be found in the current channel.")

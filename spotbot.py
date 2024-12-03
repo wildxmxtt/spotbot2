@@ -105,7 +105,7 @@ async def search(ctx):
         song_id = "https://open.spotify.com/track/" + str(regex_result.group(1)) # I hate the re module
     
     # Get current configured playlist for the Discord channel
-    playlist_link = await channel_tools.return_playlists(ctx.channel.id)
+    playlist_link = await channel_tools.return_playlist(sent_channel=ctx.channel.id, playlist_channel=PLAYLIST_CHANNEL)
 
     playlist_id_pattern = r"playlist/(.*?)\?"
     try:
@@ -303,7 +303,7 @@ async def reactChamp(ctx):
         member = guild.get_member(message[3])
 
         # Get track name and artist(s)
-        trackID = getSpotifyID(message[2]) #FIX THIS
+        trackID = getSpotifyID(message[2])['id'] #FIX THIS
         nameAndArtist = playlist_update.get_track_name_and_artist(trackID)
 
         field_value = f"{message[1]} reaction(s) - "
@@ -334,7 +334,7 @@ async def localreactChamp(ctx):
             current_year = current_date.year
             current_month = current_date.month
 
-            playlist_ID = getSpotifyID(playlist['playlist']) #FIX THIS
+            playlist_ID = getSpotifyID(playlist['playlist'])['id'] #FIX THIS
 
             # Get top 10 users and their number of songs added for the current month for the specified playlist
             cur.execute("""
@@ -377,7 +377,7 @@ async def localreactChamp(ctx):
                 member = guild.get_member(message[3])
 
                 # Get track name and artist(s)
-                trackID = getSpotifyID(message[2]) #FIX THIS
+                trackID = getSpotifyID(message[2])['id'] #FIX THIS
                 nameAndArtist = playlist_update.get_track_name_and_artist(trackID)
 
                 field_value = f"{message[1]} reaction(s) - "
@@ -437,19 +437,12 @@ async def sendLeaderBoardEmbed(ctx, results, title):
 #This is to grab the past songs that have been sent to the channel
 @bot.command()
 async def grabPast(ctx):
+    print(f"[!] Confirmation")
     checkEmoji = "☑️"
-    rEmoji = "🔁" 
+    rEmoji = "🔁"
     pastSongMsgList = []
-    config_data = config_tools.config_data('setup.json')
-    grab_past_flag = config_data['grab_past_flag']
-
-    # if(grab_past_flag) == 1:
-    #     await ctx.reply("grabPast has already been called. If this is a mistake please go to the setup.json file and set grab_past_flag to 0")
-    # else:
-        # Alert the user
     
-    await ctx.reply("Grabbing songs now please wait until FINISHED is sent")                
-    await ctx.send("Grabbing & Flitering Past Messages (this could take a while).....")
+    await ctx.reply("Grabbing songs now please wait until FINISHED is sent\nGrabbing & Flitering Past Messages (this could take a while).....")                
 
 
     # Loop through available playlists
@@ -461,25 +454,35 @@ async def grabPast(ctx):
         # Get messages from each channel 
         messages = await fetch_message_history(playlist['channel']) #FIX THIS
 
-        # Loop through messages that contain spotify links
-        word = "https://open.spotify.com/track"
         for msg in messages:
-            if word in msg.content: # Only spotifiy links
-                playlist_link = channel_tools.return_playlist_from_channel(sent_channel=msg.channel.id, playlist_channel=PLAYLIST_CHANNEL)
-                isDup = dupCheck(msg, playlist_link)# send off the link and check to see if it is a duplicate                            
-                if(isDup == False):
-                    pastSongMsgList.append(msg)
-                    if(await channel_tools.emojiCheck(ctx.message) == False):#check to see if message needs an emoji or not
-                        await channel_tools.addEmoji(emoji=checkEmoji, msg=msg) #if song is a repeat put a repeat emoji on it
-                else:
-                    if(await channel_tools.emojiCheck(msg) == False):#check to see if message needs an emoji or not
-                        await channel_tools.addEmoji(emoji=rEmoji, msg=msg) #if song is a repeat put a repeat emoji on it
+            try:
+                # Get the link info
+                link_info = getSpotifyID(msg.content)
+
+                content_type = link_info['type']
+                spotify_id = link_info['id']
+                
+                playlist_link = channel_tools.return_playlist(sent_channel=msg.channel.id, playlist_channel=PLAYLIST_CHANNEL)
+
+                if spotify_id and content_type != 'playlist':
+                    isDup = dupCheck(msg, spotify_id, playlist_link) # check if duplicate, add to the DB if not
+                    if(isDup == False):
+                        pastSongMsgList.append(spotify_id)
+                        if(await channel_tools.emojiCheck(ctx.message) == False): # check to see if message needs an emoji or not
+                            await channel_tools.addEmoji(emoji=checkEmoji, msg=msg) # if song is a repeat put a repeat emoji on it
+                    else:
+                        if(await channel_tools.emojiCheck(msg) == False): # check to see if message needs an emoji or not
+                            await channel_tools.addEmoji(emoji=rEmoji, msg=msg) # if song is a repeat put a repeat emoji on it
+            except TypeError:
+                print("[+] Not a valid link")
+            except Exception as e:
+                print(f"[!] An unexpected error has occured: {e}")
 
 
-        # send off the spotifyIDs file to be uploaded to Spotify
+    # send off the spotifyIDs file to be uploaded to Spotify
     if(pastSongMsgList != []):
         print(pgrm_signature + "Attempting to send songs off to spotify")
-        playlist_update.sendOffList(channel=ctx.channel.id, msgList=pastSongMsgList)
+        playlist_update.sendOffList(channel=ctx.channel.id, id_list=pastSongMsgList)
 
     else:
         config_tools.logs('GrabPast Found No New songs, nothing was sent to spotify')
@@ -505,77 +508,67 @@ async def on_message(msg):
     valid_channel_flag = await channel_tools.is_message_in_valid_channel(message=msg, channels=channels)
     
     if(valid_channel_flag == True):
-    #once again, all the file work can be moved over to the dupCheck() function for single file handling
-        strCheck = "https://open.spotify.com/track"
+        # Get the link info
+        link_info = getSpotifyID(msg.content)
 
-    # Loop through available playlists
-    for playlist in PLAYLIST_CHANNEL:
-        #for channels in discord_channel: 
-        # If the link is sent into the chat specified
-        if msg.channel.id == int(playlist['channel']):
-            # Record playlist link
-            # playlist_link = playlist['playlist']
+        spotify_id = link_info['id']
+        content_type = link_info['type']
 
-            #once again, all the file work can be moved over to the dupCheck() function for single file handling
-            strCheck = "https://open.spotify.com/track"
+        # If the ID is present in the message and the link is for a track
+        if spotify_id and content_type != 'playlist':
+            # Loop through available playlists
+            for playlist in PLAYLIST_CHANNEL:
+                # If the link is sent into the chat specified
+                if msg.channel.id == int(playlist['channel']):
+                    if not "The random song you got was:" in str(msg.content) or not "!search" in str(msg.content): # Without this it would catch all songs comand as a new link for some reason.
+                        print(pgrm_signature + "Valid Spotify Link")
 
-            if re.search(strCheck, msg.content):
-                if not "The random song you got was:" in str(msg.content) or not "!search" in str(msg.content): # Without this it would catch all songs comand as a new link for some reason.
-                    print(pgrm_signature + "Valid Spotify Link")
+                        checkEmoji = "☑️"
+                        rEmoji = "🔁" 
 
-                    checkEmoji = "☑️"
-                    rEmoji = "🔁" 
+                        #get the correct playlist link associated with the channel
+                        playlist_link = channel_tools.return_playlist_from_channel(sent_channel=msg.channel.id, playlist_channel=PLAYLIST_CHANNEL)
+                        # Check to see if the song is duplicate, if not add it to the DB
+                        test = dupCheck(msg, spotify_id, playlist_link)
 
-                    #get the correct playlist link associated with the channel
-                    playlist_link = channel_tools.return_playlist_from_channel(sent_channel=msg.channel.id, playlist_channel=PLAYLIST_CHANNEL)
-                    # Check to see if the song is duplicate, if not add it to the DB
-                    test = dupCheck(msg, playlist_link)
+                        # Decides what emoji to add based on if it is a duplicate or not
+                        if(test == True):
+                            await msg.add_reaction (rEmoji)
+                        else:
+                            # Once added to DB send to spotify to add to playlist
+                            print(pgrm_signature + playlist_update.sendOff(msg=msg, spotify_id=spotify_id))
+                            await msg.add_reaction(checkEmoji) #adds emoji when song is added to playlist
 
-                    #Decides what emoji to add based on if it is a duplicate or not
-                    if(test == True):
-                        await msg.add_reaction (rEmoji)
-                    else:
-                        # Once added to DB send to spotify to add to playlist
-                        print(pgrm_signature + playlist_update.sendOff(msg=msg))
-                        await msg.add_reaction(checkEmoji) #adds emoji when song is added to playlist
+                            # Warn users that previous songs may not be accounted for as grabPast has NOT been called
+                            if(int(grab_past_flag) == 0):
+                                await msg.reply("WARNING GRAB PAST FLAG IS STILL ZERO, IF THERE ARE NO PAST SONGS YOU NEED TO GRAB. SET THE GRAB PAST FLAG TO ZERO IN setup.json AND RESTART spotbot.py. THIS WILL CAUSE ERRORS ELSEWISE")
+                            
+                            # Check for acheivements (connect to db, get song count)
+                            conn = sqlite3.connect('databases/spotbot.db')
+                            cur = conn.cursor()
 
-                        # Warn users that previous songs may not be accounted for as grabPast has NOT been called
-                        if(int(grab_past_flag) == 0):
-                            await msg.reply("WARNING GRAB PAST FLAG IS STILL ZERO, IF THERE ARE NO PAST SONGS YOU NEED TO GRAB. SET THE GRAB PAST FLAG TO ZERO IN setup.json AND RESTART spotbot.py. THIS WILL CAUSE ERRORS ELSEWISE")
-                        
-                        # Check for acheivements (connect to db, get song count)
-                        conn = sqlite3.connect('databases/spotbot.db')
-                        cur = conn.cursor()
+                            cur.execute("SELECT COUNT(*) FROM songs WHERE playlist_ID = ?", (getSpotifyID(playlist_link)['id'],))
+                            songs = cur.fetchone()[0]
 
-                        cur.execute("SELECT COUNT(*) FROM songs WHERE playlist_ID = ?", (getSpotifyID(playlist_link),))
-                        songs = cur.fetchone()[0]
+                            # Every 10 songs check for achievements (For perfromance)
+                            if (songs % 5 == 0 or songs == 69):
+                                # Get the acheivement string (if any)
+                                celebration = achievements.checkAchievement(songs, grab_past_flag)
 
-                        # Every 10 songs check for achievements (For perfromance)
-                        if (songs % 5 == 0 or songs == 69):
-                            # Get the acheivement string (if any)
-                            celebration = achievements.checkAchievement(songs, grab_past_flag)
+                                # Get duration achievement (if any)
+                                duration = achievements.checkDurationAchievement(playlist_update.get_playlist_duration(playlist_link))
 
-                            # Get duration achievement (if any)
-                            duration = achievements.checkDurationAchievement(playlist_update.get_playlist_duration(playlist_link))
+                                # If there is a celebration, send the message
+                                if(celebration):
+                                    await msg.channel.send(celebration)
+                                if(duration):
+                                    await msg.channel.send(duration)
+                            
+                            conn.close()
 
-                            # If there is a celebration, send the message
-                            if(celebration):
-                                await msg.channel.send(celebration)
-                            if(duration):
-                                await msg.channel.send(duration)
-                        
-                        conn.close()
-
-        # else:            
-        #     print(pgrm_signature + "Not valid Spotify channel: " + str(msg.channel.id))
-
-        #     await bot.process_commands(msg)
-
-        #     # Return True to show success and break from any loops
-        #     return True
-    else:
-        print(pgrm_signature + "Not valid Spotify channel or spotify link in: " + str(msg.channel.id) + " | spotbot looking at channels: " + str(channels))
-        await bot.process_commands(msg)
+        else:
+            print(pgrm_signature + "Not valid Spotify channel or spotify link in: " + str(msg.channel.id) + " | spotbot looking at channels: " + str(channels))
+            await bot.process_commands(msg)
 
 
 @bot.command()
@@ -638,23 +631,27 @@ async def search_past(ctx, enabled=False, channel=""):
     checkEmoji = "☑️"
     rEmoji = "🔁" 
     if(enabled == True):
-        word = "https://open.spotify.com/track"
-
         config_tools.logs("Grabbing past messages.....", log_file=r'logs/channel_tools.log')
         messages = [messages async for messages in ctx.history(limit=500000)] #If your bot is not reading all of your messages this number may have to be higher
 
         # to make it work with only one file, surprisingly all the playlist file handling is done in dupCheck()
         for msg in messages:
             try:
-                if word in msg.content:
+                # Get the link info
+                link_info = getSpotifyID(msg.content)
+                content_type = link_info['type']
+                spotify_id = link_info['id']
+
+                # ignore playlists and non spotify links
+                if content_type == 'track' or link_info != None:
                     # Get the playlist link associate with the channel
                     playlist_link = channel_tools.return_playlist_from_channel(sent_channel=msg.channel.id, playlist_channel=PLAYLIST_CHANNEL)
-                    check = dupCheck(msg, playlist_link) #checks to see if the correct emoji is on the message
+                    check = dupCheck(msg, spotify_id, playlist_link) #checks to see if the correct emoji is on the message
                     
                     # If the song is not a duplicate, add to the playlist
                     if check == False:
                         try:
-                            playlist_update.sendOff(msg)
+                            playlist_update.sendOff(msg, spotify_id)
                             if(await channel_tools.emojiCheck(msg) == False):#check to see if message needs an emoji or not
                                 await channel_tools.addEmoji(emoji=checkEmoji, msg=msg) #if song is a repeat put a repeat emoji on it
                         except Exception as e:
@@ -678,49 +675,36 @@ async def search_past(ctx, enabled=False, channel=""):
 
 
 #checks for duplicates before sending songs off to uri.txt and recording in database
-def dupCheck(msg, playlist_link):
-    if "!search" in str(msg.content):
-        print("\033[35m[!] Search command detected. Doing nothing...\033[0m")
-    else:
-        songlink = playlist_update.song_link_extract(msg)
-        
-        # opening a text files (new)
-        conn = sqlite3.connect('databases/spotbot.db')
-        cur = conn.cursor()
-
-        # Separate the string supplied to just the spotify ID
-        # are the same song:
-        # https://open.spotify.com/track/2XgTw2co6xv95TmKpMcL70?si=dbe7fd4a016344ec
-        # https://open.spotify.com/track/2XgTw2co6xv95TmKpMcL70?si=8fe74b50ad804b52
-        sep = '?'
-        stripped = songlink.split(sep, 1)[0]
-
-        # Attempt to select spotify_ID
-        # input sanitization - https://realpython.com/prevent-python-sql-injection/
-        # Check if there is a song id in the specified playlist
-        playlist_ID = getSpotifyID(playlist_link)
-        cur.execute("SELECT spotify_ID FROM songs WHERE spotify_ID = ? AND playlist_ID = ?", (stripped,playlist_ID,))
-        matches = cur.fetchone()
-
-        # If a match is found
-        if matches:
-            print(f'{pgrm_signature}: Song {songlink} found In song database')
-            print(f'{pgrm_signature}: DUPLICATE LINK FOUND, NOT ADDED TO PLAYLIST FILE')
-
-            return True # EXIT and return true; this is infact a duplicate
-        else: # If a match is not found
-            # Add the song ID into the database
-            #TO-DO: This writes to the db and assumes the song will always make it do the db, we should look to create a sync check around here??
-            print(pgrm_signature + 'NEW! | String', songlink , 'Not Found')
-            cur.execute("INSERT INTO songs (spotify_ID, playlist_ID, sender_ID, timestamp, discord_message_id) VALUES (?, ?, ?, ?, ?)", 
-                        (stripped, playlist_ID, getSender(msg), getTimestamp(msg), getMessageID(msg)))
-            conn.commit()
-            
+def dupCheck(msg, spotify_id, playlist_link):
+    songlink = playlist_update.song_link_extract(msg)
     
-            conn.close()
-            return False
-        # Close the connection to the database
-  
+    # opening a text files (new)
+    conn = sqlite3.connect('databases/spotbot.db')
+    cur = conn.cursor()
+
+    # Attempt to select spotify_ID
+    # input sanitization - https://realpython.com/prevent-python-sql-injection/
+    # Check if there is a song id in the specified playlist
+    playlist_ID = getSpotifyID(playlist_link)['id']
+    cur.execute("SELECT spotify_ID FROM songs WHERE spotify_ID = ? AND playlist_ID = ?", (spotify_id,playlist_ID,))
+    matches = cur.fetchone()
+
+    # If a match is found
+    if matches:
+        print(f'{pgrm_signature}: Song {songlink} found In song database')
+
+        # EXIT and return true; this is infact a duplicate
+        return True
+    else: # If a match is not found
+        # Add the song ID into the database
+        print(pgrm_signature + 'NEW! | String', songlink , 'Not Found')
+        cur.execute("INSERT INTO songs (spotify_ID, playlist_ID, sender_ID, timestamp, discord_message_id) VALUES (?, ?, ?, ?, ?)", 
+                    (spotify_id, playlist_ID, getSender(msg), getTimestamp(msg), getMessageID(msg)))
+        conn.commit()
+        
+        conn.close()
+        return False
+
 
 def uritxt(link):
     config_data = config_tools.config_data()
@@ -826,9 +810,34 @@ def getMessageID(msg):
     # return the sender ID to be used in dupCheck to be recorded in the songs playlist
     return message_id
 
-def getSpotifyID(playlist_link):
-    # Return the playlist ID
-    return playlist_link.split('/')[-1].split('?')[0]
+# Returns the Spotify track or playlist ID from various URL types
+def getSpotifyID(url):
+    # Regex patterns for regular, uri, and shortened spotify links. AI code.
+    patterns = [
+        r'open\.spotify\.com/(track|playlist)/([a-zA-Z0-9]+)',
+        r'spotify:(track|playlist):([a-zA-Z0-9]+)',
+        r'spotify\.link/([a-zA-Z0-9]+)'
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            if len(match.groups()) == 2: # if both the content_type and spotify_id
+                content_type, spotify_id = match.groups()
+            else: # if only spotify
+                content_type = None
+                spotify_id = match.group(1)
+
+            return {
+                'type': content_type,
+                'id': spotify_id
+            }
+
+    # return none if spotify_ID not found
+    return {
+        'type': None,
+        'id': None
+    }
 
 # Initialize the database if not created yet
 database_tools.initialize_milestones('databases/spotbot.db', PLAYLIST_CHANNEL)

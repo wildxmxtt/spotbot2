@@ -437,7 +437,6 @@ async def sendLeaderBoardEmbed(ctx, results, title):
 #This is to grab the past songs that have been sent to the channel
 @bot.command()
 async def grabPast(ctx):
-    print(f"[!] Confirmation")
     checkEmoji = "☑️"
     rEmoji = "🔁"
     pastSongMsgList = []
@@ -474,7 +473,7 @@ async def grabPast(ctx):
                         if(await channel_tools.emojiCheck(msg) == False): # check to see if message needs an emoji or not
                             await channel_tools.addEmoji(emoji=rEmoji, msg=msg) # if song is a repeat put a repeat emoji on it
             except TypeError:
-                print("[+] Not a valid link")
+                print(f"[+] Not a valid link. Here's the link: {msg.content}")
             except Exception as e:
                 print(f"[!] An unexpected error has occured: {e}")
 

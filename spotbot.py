@@ -685,7 +685,7 @@ def dupCheck(msg, spotify_id, playlist_link):
     # input sanitization - https://realpython.com/prevent-python-sql-injection/
     # Check if there is a song id in the specified playlist
     playlist_ID = getSpotifyID(playlist_link)['id']
-    cur.execute("SELECT spotify_ID FROM songs WHERE spotify_ID = ? AND playlist_ID = ?", (spotify_id,playlist_ID,))
+    cur.execute("SELECT spotify_ID FROM songs WHERE spotify_ID = ? AND playlist_ID = ? LIMIT 1", (spotify_id,playlist_ID,))
     matches = cur.fetchone()
 
     # If a match is found

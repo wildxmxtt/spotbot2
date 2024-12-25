@@ -535,7 +535,7 @@ async def on_message(msg):
                             await msg.add_reaction (rEmoji)
                         else:
                             # Once added to DB send to spotify to add to playlist
-                            print(pgrm_signature + playlist_update.sendOff(msg=msg, spotify_id=spotify_id))
+                            await print(pgrm_signature + playlist_update.sendOff(msg=msg, spotify_id=spotify_id))
                             await msg.add_reaction(checkEmoji) #adds emoji when song is added to playlist
 
                             # Warn users that previous songs may not be accounted for as grabPast has NOT been called

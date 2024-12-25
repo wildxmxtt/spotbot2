@@ -12,7 +12,7 @@ import re, datetime
 pgrm_signature = "playlist_update.py: "
 SECRET_DATABASE = 'setup.json'
 
-def sendOff(msg, spotify_id): 
+async def sendOff(msg, spotify_id): 
     tracks = []
 
     pgrm_signature = "playlist_update.py: "
@@ -26,7 +26,7 @@ def sendOff(msg, spotify_id):
     sp = refresh_sp(init_spotify_flag)
 
     # Get the playlist link associated with the channel
-    playlist_link = channel_tools.return_playlist(sent_channel=msg.channel.id, playlist_channel=playlist_channel)
+    playlist_link = await channel_tools.return_playlist(sent_channel=msg.channel.id, playlist_channel=playlist_channel)
 
     # Get the playlist ID
     playlist_ID = get_playlist_id(playlist_link)

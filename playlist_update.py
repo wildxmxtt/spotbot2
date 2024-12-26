@@ -29,12 +29,12 @@ async def sendOff(msg, spotify_id):
     playlist_link = await channel_tools.return_playlist(sent_channel=msg.channel.id, playlist_channel=playlist_channel)
 
     # Get the playlist ID
-    playlist_ID = get_playlist_id(playlist_link)
+    playlist_ID = config_tools.getSpotifyID(playlist_link)
 
     tracks.append(spotify_id)
 
     # add the song to the playlist using the SP object
-    sp.playlist_add_items(playlist_ID, tracks)
+    sp.playlist_add_items(playlist_ID['id'], tracks)
     config_tools.logs(message=f'{pgrm_signature}: Playlist update {playlist_link} was sent and went through!')
     return f'{pgrm_signature}: Playlist update {playlist_link} was sent and went through!'
 

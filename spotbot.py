@@ -105,7 +105,7 @@ async def search(ctx):
         song_id = "https://open.spotify.com/track/" + str(regex_result.group(1)) # I hate the re module
     
     # Get current configured playlist for the Discord channel
-    playlist_link = await channel_tools.return_playlist(sent_channel=ctx.channel.id, playlist_channel=PLAYLIST_CHANNEL)
+    playlist_link = channel_tools.return_playlist(sent_channel=ctx.channel.id, playlist_channel=PLAYLIST_CHANNEL)
 
     playlist_id_pattern = r"playlist/(.*?)\?"
     try:
@@ -303,7 +303,7 @@ async def reactChamp(ctx):
         member = guild.get_member(message[3])
 
         # Get track name and artist(s)
-        trackID = getSpotifyID(message[2])['id'] #FIX THIS
+        trackID = config_tools.getSpotifyID(message[2])['id'] #FIX THIS
         nameAndArtist = playlist_update.get_track_name_and_artist(trackID)
 
         field_value = f"{message[1]} reaction(s) - "
@@ -334,7 +334,7 @@ async def localreactChamp(ctx):
             current_year = current_date.year
             current_month = current_date.month
 
-            playlist_ID = getSpotifyID(playlist['playlist'])['id'] #FIX THIS
+            playlist_ID = config_tools.getSpotifyID(playlist['playlist'])['id'] #FIX THIS
 
             # Get top 10 users and their number of songs added for the current month for the specified playlist
             cur.execute("""
@@ -377,7 +377,7 @@ async def localreactChamp(ctx):
                 member = guild.get_member(message[3])
 
                 # Get track name and artist(s)
-                trackID = getSpotifyID(message[2])['id'] #FIX THIS
+                trackID = config_tools.getSpotifyID(message[2])['id'] #FIX THIS
                 nameAndArtist = playlist_update.get_track_name_and_artist(trackID)
 
                 field_value = f"{message[1]} reaction(s) - "
@@ -456,7 +456,7 @@ async def grabPast(ctx):
         for msg in messages:
             try:
                 # Get the link info
-                link_info = getSpotifyID(msg.content)
+                link_info = config_tools.getSpotifyID(msg.content)
 
                 content_type = link_info['type']
                 spotify_id = link_info['id']
@@ -508,7 +508,7 @@ async def on_message(msg):
     
     if(valid_channel_flag == True):
         # Get the link info
-        link_info = getSpotifyID(msg.content)
+        link_info = config_tools.getSpotifyID(msg.content)
 
         spotify_id = link_info['id']
         content_type = link_info['type']
@@ -535,7 +535,7 @@ async def on_message(msg):
                             await msg.add_reaction (rEmoji)
                         else:
                             # Once added to DB send to spotify to add to playlist
-                            await print(pgrm_signature + playlist_update.sendOff(msg=msg, spotify_id=spotify_id))
+                            print(f"{await playlist_update.sendOff(msg=msg, spotify_id=spotify_id)}")
                             await msg.add_reaction(checkEmoji) #adds emoji when song is added to playlist
 
                             # Warn users that previous songs may not be accounted for as grabPast has NOT been called
@@ -546,7 +546,7 @@ async def on_message(msg):
                             conn = sqlite3.connect('databases/spotbot.db')
                             cur = conn.cursor()
 
-                            cur.execute("SELECT COUNT(*) FROM songs WHERE playlist_ID = ?", (getSpotifyID(playlist_link)['id'],))
+                            cur.execute("SELECT COUNT(*) FROM songs WHERE playlist_ID = ?", (config_tools.getSpotifyID(playlist_link)['id'],))
                             songs = cur.fetchone()[0]
 
                             # Every 10 songs check for achievements (For perfromance)
@@ -637,7 +637,7 @@ async def search_past(ctx, enabled=False, channel=""):
         for msg in messages:
             try:
                 # Get the link info
-                link_info = getSpotifyID(msg.content)
+                link_info = config_tools.getSpotifyID(msg.content)
                 content_type = link_info['type']
                 spotify_id = link_info['id']
 
@@ -684,7 +684,7 @@ def dupCheck(msg, spotify_id, playlist_link):
     # Attempt to select spotify_ID
     # input sanitization - https://realpython.com/prevent-python-sql-injection/
     # Check if there is a song id in the specified playlist
-    playlist_ID = getSpotifyID(playlist_link)['id']
+    playlist_ID = config_tools.getSpotifyID(playlist_link)['id']
     cur.execute("SELECT spotify_ID FROM songs WHERE spotify_ID = ? AND playlist_ID = ? LIMIT 1", (spotify_id,playlist_ID,))
     matches = cur.fetchone()
 
@@ -808,35 +808,6 @@ def getMessageID(msg):
 
     # return the sender ID to be used in dupCheck to be recorded in the songs playlist
     return message_id
-
-# Returns the Spotify track or playlist ID from various URL types
-def getSpotifyID(url):
-    # Regex patterns for regular, uri, and shortened spotify links. AI code.
-    patterns = [
-        r'open\.spotify\.com/(track|playlist)/([a-zA-Z0-9]+)',
-        r'spotify:(track|playlist):([a-zA-Z0-9]+)',
-        r'spotify\.link/([a-zA-Z0-9]+)'
-    ]
-
-    for pattern in patterns:
-        match = re.search(pattern, url)
-        if match:
-            if len(match.groups()) == 2: # if both the content_type and spotify_id
-                content_type, spotify_id = match.groups()
-            else: # if only spotify
-                content_type = None
-                spotify_id = match.group(1)
-
-            return {
-                'type': content_type,
-                'id': spotify_id
-            }
-
-    # return none if spotify_ID not found
-    return {
-        'type': None,
-        'id': None
-    }
 
 # Initialize the database if not created yet
 database_tools.initialize_milestones('databases/spotbot.db', PLAYLIST_CHANNEL)

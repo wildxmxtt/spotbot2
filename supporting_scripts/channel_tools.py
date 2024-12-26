@@ -128,9 +128,9 @@ async def return_channels(playlist_channel):
     return channels #retruns all channel w/o playlist links 
 
 # Returns a playlist link using the channel id
-async def return_playlist(sent_channel, playlist_channel):
+def return_playlist(sent_channel, playlist_channel):
     for item in playlist_channel:
-        if item['channel'] == sent_channel:
+        if int(item['channel']) == int(sent_channel):
             return item['playlist']
     
     # If a playlist is not found, return false

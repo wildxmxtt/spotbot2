@@ -73,7 +73,7 @@ async def hlp(ctx):
             "[!]localreactchamp (gives a leaderboard of this months most reacted contributed songs)")
 
     await ctx.reply(helpText +
-            "When a user sends a messsage in this chat the bot will analyze that message, if it is a valid spotify link it will be placed into the playlist\n")
+            "\n\nWhen a user sends a messsage in this chat the bot will analyze that message, if it is a valid spotify link it will be placed into the playlist\n")
     
 
 #gives the link set in the setup.json file
@@ -147,9 +147,20 @@ async def search(ctx):
 async def sLinkAll(ctx):
     config_data = config_tools.config_data(SECRET_DATABASE)
     playlist_channel = config_data['playlist_channel']
-    #playlist_link = channel_tools.return_playlist_from_channel(sent_channel=ctx.channel.id, playlist_channel=playlist_channel)
-    playlist_links = await channel_tools.return_playlists(playlist_channel=playlist_channel)
-    await ctx.reply(playlist_links)
+
+    links = "**Playlists:**\n"
+    for item in playlist_channel:
+        try:
+            links += f"\n{str(item['playlist'])}"
+        except KeyError as e:
+            print(f"Error! No playlist links found: {e}")
+            await ctx.reply(f"No playlist links found.")
+            return None
+        except Exception as e:
+            print(f"Error! An exception has occured: {e}")
+            await ctx.reply("An error has occured.")
+
+    await ctx.reply(links)
 
 
 #a request command to give the user back a random song from the playlist 
@@ -173,8 +184,9 @@ async def r(ctx):
     if spotify_ids:
         # get a random id
         random_song = random.choice(spotify_ids)
-        print(f"The random song you got was: {random_song}")
-        await ctx.reply(f"The random song you got was: {random_song}")
+        link = f"https://open.spotify.com/track/{random_song}"
+        print(f"The random song you got was: {link}")
+        await ctx.reply(f"The random song you got was: {link}")
     else: # if there are no songs
         print(f"There are no songs yet.")
         await ctx.reply("There are no songs yet. A random song cannot be retrieved.")
@@ -303,11 +315,10 @@ async def reactChamp(ctx):
         member = guild.get_member(message[3])
 
         # Get track name and artist(s)
-        trackID = config_tools.getSpotifyID(message[2])['id'] #FIX THIS
-        nameAndArtist = playlist_update.get_track_name_and_artist(trackID)
+        nameAndArtist = playlist_update.get_track_name_and_artist(message[2])
 
         field_value = f"{message[1]} reaction(s) - "
-        field_value += f"[{nameAndArtist}]({message[2]})"
+        field_value += f"[{nameAndArtist}](https://open.spotify/com/track/{message[2]})"
         embed.add_field(name=f"{loops}. {member.display_name}", value=field_value, inline=False)
         loops += 1
 
@@ -377,11 +388,10 @@ async def localreactChamp(ctx):
                 member = guild.get_member(message[3])
 
                 # Get track name and artist(s)
-                trackID = config_tools.getSpotifyID(message[2])['id'] #FIX THIS
-                nameAndArtist = playlist_update.get_track_name_and_artist(trackID)
+                nameAndArtist = playlist_update.get_track_name_and_artist(message[2])
 
                 field_value = f"{message[1]} reaction(s) - "
-                field_value += f"[{nameAndArtist}]({message[2]})"
+                field_value += f"[{nameAndArtist}](https://open.spotify/com/track/{message[2]})"
                 embed.add_field(name=f"{loops}. {member.display_name}", value=field_value, inline=False)
                 loops += 1
 
@@ -407,8 +417,6 @@ async def sendLeaderBoardEmbed(ctx, results, title):
                 usernames[userID] = member.display_name
             else:
                 usernames[userID] = member.name
-            
-            print(f"{pgrm_signature}: Debug - User ID: {userID}, Name: {member.name}, Display name: {member.display_name}")
 
         except discord.NotFound:
             usernames[userID] = "Unknown User"
@@ -519,7 +527,7 @@ async def on_message(msg):
             for playlist in PLAYLIST_CHANNEL:
                 # If the link is sent into the chat specified
                 if msg.channel.id == int(playlist['channel']):
-                    if not "The random song you got was:" in str(msg.content) or not "!search" in str(msg.content): # Without this it would catch all songs comand as a new link for some reason.
+                    if not "The random song you got was:" in str(msg.content) and not "!search" in str(msg.content) and not "!waves" in str(msg.content): # Without this it would catch all songs comand as a new link for some reason.
                         print(pgrm_signature + "Valid Spotify Link")
 
                         checkEmoji = "☑️"
@@ -573,7 +581,7 @@ async def on_message(msg):
 @bot.command()
 async def waves(ctx, arg = None):
     if(arg == None):
-        await ctx.channel.reply('User Must provide a spotify link argument for this command to work')
+        await ctx.reply('User Must provide a spotify link argument for this command to work')
         return
     for playlist in PLAYLIST_CHANNEL:
         # Command only functions within the global variable: discord_channel, specified in setup.json

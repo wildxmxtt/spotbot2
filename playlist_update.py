@@ -26,7 +26,7 @@ async def sendOff(msg, spotify_id):
     sp = refresh_sp(init_spotify_flag)
 
     # Get the playlist link associated with the channel
-    playlist_link = await channel_tools.return_playlist(sent_channel=msg.channel.id, playlist_channel=playlist_channel)
+    playlist_link = channel_tools.return_playlist(sent_channel=msg.channel.id, playlist_channel=playlist_channel)
 
     # Get the playlist ID
     playlist_ID = config_tools.getSpotifyID(playlist_link)

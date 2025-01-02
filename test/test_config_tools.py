@@ -46,27 +46,21 @@ class TestConfigTools(unittest.TestCase):
             # Use the link located at index 1
             result = ct.getSpotifyID(link[1])
 
-            # Test the id at index 1
+            # Test the id
             self.assertEqual(result['id'], expectedLinkID)
 
-            # Test the type at index 0
-            if "URI" in link[0]:
-                self.assertEqual(result['type'], None)
-            else: 
-                self.assertEqual(result['type'], "track")
+            # Test the type
+            self.assertEqual(result['type'], "track")
 
         for link in playlistLinks:
             # Use the link located at index 1
-            result = ct.getSpotifyID(link['id'])
+            result = ct.getSpotifyID(link[1])
 
-            # Test the id at index 1
+            # Test the id
             self.assertEqual(result['id'], expectedPlaylistID)
 
-            # Test the type at index 0
-            if "URI" in link[0]:
-                self.assertEqual(result['type'], None)
-            else: 
-                self.assertEqual(result['type'], "track")
+            # Test the type
+            self.assertEqual(result['type'], "playlist")
 
         
 if __name__ == "__main__":

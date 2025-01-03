@@ -64,6 +64,7 @@ async def hlp(ctx):
         "[!]sLinkAll (gives the user the all of the links to the spotify playlists that spotbot is associated with) \n" + 
         "[!]grabPast (allows for the user to grab past songs sent in a chat, this can only be ran once) \n" +
         "[!]r (gives the user a random song from the playlist!) \n" +
+        "[!]search (checks if a given spotify link has been added to the playlist) \n" +
         "[!]waves (generate Spotify's wave codes png image files.)\n")
 
     if LEADERBOARD is True:
@@ -98,7 +99,7 @@ async def search(ctx, arg = None):
         await ctx.reply("Please provide an argument for this command.")
         return
     elif validation_result == None:
-        await ctx.reply("Please provide a valid Spotify link as an argument.\n```Example:\nhttps://open.spotify.com/track/...```")
+        await ctx.reply("Please provide a valid Spotify link as an argument.\n```Examples:\nhttps://open.spotify.com/track/foo\nhttps://open.spotify.com/track/foo?si=bar```")
         return
     # End input validation
 

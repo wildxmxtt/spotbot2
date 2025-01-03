@@ -302,4 +302,5 @@ def get_track_name_and_artist(trackID):
     artists = track['artists']
     # {track['artists']['name']
 
-    return f"{track['name']} - {artists[0]['name']}"
+    return [str(track['name']), str(artists[0]['name'])] # Index 0 is title, index 1 is artist. This allows the caller to
+                                                         # customize their output however they choose.

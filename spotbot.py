@@ -64,6 +64,7 @@ async def hlp(ctx):
         "[!]sLinkAll (gives the user the all of the links to the spotify playlists that spotbot is associated with) \n" + 
         "[!]grabPast (allows for the user to grab past songs sent in a chat, this can only be ran once) \n" +
         "[!]r (gives the user a random song from the playlist!) \n" +
+        "[!]search (checks if a given spotify link has been added to the playlist) \n" +
         "[!]waves (generate Spotify's wave codes png image files.)\n")
 
     if LEADERBOARD is True:
@@ -89,34 +90,52 @@ async def sLink(ctx):
     await ctx.reply(str(channel.name) + "'s playlist is:" + playlist_link + " Discord Channel ID: " + str(channel_ID))
 
 @bot.command()
-async def search(ctx):
-    # REGEX THE PLAYLIST ID
-    print("[+] This shi' workin'!")
-    # Regex for song ID in string argument
-    song_id_pattern = r"track/(.*?)\?"
-    spotify_link = str(ctx.message.content)
+async def search(ctx, arg = None):
+    # Begin input validation
+    spotify_link = str(arg)
+    input_validation = r"^https://open.spotify.com/track/[a-zA-Z0-9]{22}$|^https://open.spotify.com/track/[a-zA-Z0-9]{22}\?si=[a-zA-Z0-9]{16}$"
+    validation_result = re.search(input_validation, spotify_link)
+    if arg == None:
+        await ctx.reply("Please provide an argument for this command.")
+        return
+    elif validation_result == None:
+        await ctx.reply("Please provide a valid Spotify link as an argument.\n```Examples:\nhttps://open.spotify.com/track/foo\nhttps://open.spotify.com/track/foo?si=bar```")
+        return
+    # End input validation
+
+    # Begin song ID extraction
+    song_id_pattern = r"^https://open.spotify.com/track/(.*?)\?"
     try:
         regex_result = re.search(song_id_pattern, spotify_link)
-        song_id = "%" + str(regex_result.group(1)) + "%" # I hate the re module
+
+        song_id = str(regex_result.group(1))
+        song_id_wildcard = "%" + str(regex_result.group(1)) + "%"
+        
+        name_and_artist = playlist_update.get_track_name_and_artist(song_id)
     except AttributeError as e:
-        print("\033[35m[!] WARNING: Non-standard spotify link detected. Attempting another song ID search with a new regex pattern...\033[0m")
-        song_id_pattern = r"track/(.*)"
+        print(f"\033[35m[!] {pgrm_signature}WARNING! Non-standard spotify link detected. Attempting another song ID search with a new regex pattern...\033[0m")
+        song_id_pattern = r"^https://open.spotify.com/track/(.*)"
         regex_result = re.search(song_id_pattern, spotify_link)
-        song_id = "https://open.spotify.com/track/" + str(regex_result.group(1)) # I hate the re module
+        song_id = str(regex_result.group(1))
+        song_id_wildcard = "%" + song_id + "%"
+        name_and_artist = playlist_update.get_track_name_and_artist(song_id)
+    # End song ID extraction
     
     # Get current configured playlist for the Discord channel
     playlist_link = channel_tools.return_playlist(sent_channel=ctx.channel.id, playlist_channel=PLAYLIST_CHANNEL)
 
     playlist_id_pattern = r"playlist/(.*?)\?"
     try:
-        playlist_regex_result = re.search(playlist_id_pattern, str(playlist_link[0])) # return_playlists returns a list
+        playlist_regex_result = re.search(playlist_id_pattern, str(playlist_link[0]))
         playlist_id = str(playlist_regex_result.group(1))
     except AttributeError as e:
-        print("\033[35m[!] WARNING: Non-standard spotify playlist link detected. Attempting another playlist ID search with a new regex pattern...\033[0m")
+        print(f"\033[35m[!] {pgrm_signature}WARNING. Non-standard spotify playlist link detected. Attempting another playlist ID search with a new regex pattern...\033[0m")
         playlist_id_pattern = r"playlist/(.*)"
         playlist_regex_result = re.search(playlist_id_pattern, playlist_id)
         playlist_id = str(playlist_regex_result.group(1))
-    # Connect to SQLite Database
+    # End playlist ID extraction
+
+    # Begin SQLite query
     conn = sqlite3.connect('databases/spotbot.db')
     cur = conn.cursor()
 
@@ -125,23 +144,26 @@ async def search(ctx):
         SELECT discord_message_id
         FROM songs
         WHERE spotify_ID LIKE ? AND playlist_ID = ?;
-        """, (song_id, playlist_id,))
+        """, (song_id_wildcard, playlist_id,))
     message_id = cur.fetchone()
-    
-    # Only attempt to fetch message if message ID exists in db
-    if message_id != 'None':
+    # End SQLite query
+
+    # Begin message search
+    if message_id != None:
         current_channel = ctx.channel.id
-        try:
-            channel = bot.get_channel(current_channel)
-        except:
+        channel = bot.get_channel(current_channel)
+        if channel == None:
             await ctx.reply("Channel not found.")
+            return
         try:
             message = await channel.fetch_message(message_id[0])
-            await message.reply("Song found!")
+            result = f"Song found!\n\n**Title:** {name_and_artist[0]}\n**Artist:** {name_and_artist[1]}"
+            await message.reply(result)
         except:
-            await ctx.reply("The provided song cannot be found in the current channel.")
+            await ctx.reply(f"The provided song exists in the playlist, but cannot be found in the current channel.\n\n**Title:** {name_and_artist[0]}\n**Artist:** {name_and_artist[1]}")
     else:
-        await ctx.reply("The provided song has yet to be added to the playlist.")
+        await ctx.reply("The provided song does not exist in the playlist.")
+    # End message search
 
 @bot.command()
 async def sLinkAll(ctx):
@@ -318,7 +340,9 @@ async def reactChamp(ctx):
         nameAndArtist = playlist_update.get_track_name_and_artist(message[2])
 
         field_value = f"{message[1]} reaction(s) - "
-        field_value += f"[{nameAndArtist}](https://open.spotify/com/track/{message[2]})"
+
+        field_value += f"[{nameAndArtist[0]} - {nameAndArtist[1]}]({message[2]})"
+
         embed.add_field(name=f"{loops}. {member.display_name}", value=field_value, inline=False)
         loops += 1
 
@@ -391,7 +415,9 @@ async def localreactChamp(ctx):
                 nameAndArtist = playlist_update.get_track_name_and_artist(message[2])
 
                 field_value = f"{message[1]} reaction(s) - "
-                field_value += f"[{nameAndArtist}](https://open.spotify/com/track/{message[2]})"
+
+                field_value += f"[{nameAndArtist[0]} - {nameAndArtist[1]}]({message[2]})"
+
                 embed.add_field(name=f"{loops}. {member.display_name}", value=field_value, inline=False)
                 loops += 1
 
@@ -515,6 +541,7 @@ async def on_message(msg):
     valid_channel_flag = await channel_tools.is_message_in_valid_channel(message=msg, channels=channels)
     
     if(valid_channel_flag == True):
+
         # Get the link info
         link_info = config_tools.getSpotifyID(msg.content)
 
@@ -572,6 +599,7 @@ async def on_message(msg):
                                     await msg.channel.send(duration)
                             
                             conn.close()
+
 
         else:
             print(pgrm_signature + "Not valid Spotify channel or spotify link in: " + str(msg.channel.id) + " | spotbot looking at channels: " + str(channels))

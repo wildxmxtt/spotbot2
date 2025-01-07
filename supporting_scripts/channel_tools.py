@@ -97,8 +97,12 @@ def emoji_list_match(list1, list2):
         return False
 
 async def addEmoji(msg, emoji = "☑️"):
-    print(msg.content)
-    await msg.add_reaction (emoji)
+    hasEmoji = emojiCheck(msg)
+    if(hasEmoji == False):
+        print(msg.content)
+        await msg.add_reaction (emoji)
+    else:
+        print("message already contains valid spotbot emoji")
 
 async def emojiCheck(msg):
     checkEmoji = "☑️"
@@ -113,6 +117,7 @@ async def emojiCheck(msg):
         return False
     else: 
         return True
+    
     
 async def is_message_in_valid_channel(message, channels):
     if message.channel.id in channels:
@@ -144,4 +149,47 @@ def return_playlist_from_channel(sent_channel, playlist_channel):
             playlist_link = item['playlist']
     return playlist_link
 
+def get_command_list(bot_instance):
+    return [f"{bot_instance.command_prefix}{cmd.name}" for cmd in bot_instance.commands]
 
+def check_if_msg_from_bot(msg):
+    if msg.author == bot.user:
+        #is from bot
+        return True
+    else: 
+        return False
+
+def check_msg_for_commands(msg, bot):
+    command_list = get_command_list(bot)
+
+    if any(command in msg.content for command in command_list):
+        # await msg.channel.send(f"Command detected: {msg.content}")
+        return True
+    else:
+        # await msg.channel.send("No command found in the message.")
+        return False
+    
+def contains_spotify_word(msg):
+    if "spotify" in msg.content.lower():
+        return True
+    else:
+        return False
+
+
+#checks several cases to ensure message is valid
+def msg_validity_check(msg, bot):
+    fromBot = check_if_msg_from_bot (msg=msg)
+    if(fromBot == True):
+        #Has message from bot
+        return False
+    #checks if message contains the word spotify. If the message dose not we do not even want to look at it
+    contains_spotify = contains_spotify_word(msg=msg)
+    if(contains_spotify == False):
+        return False
+    hasCommand = check_msg_for_commands(msg=msg, bot=bot)
+    if(hasCommand == True):
+        #has an internal command in it
+        return False
+    
+    #no case was triggered, message is valid 
+    return True

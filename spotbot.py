@@ -37,7 +37,7 @@ bot = commands.Bot(command_prefix='!', case_insensitive=True, intents=intents)
 
 
 @bot.event
-async def on_ready():
+async def on_ready(bot=bot):
     config_data = config_tools.config_data(SECRET_DATABASE)
     check_past_on_boot = config_data['check_past_on_boot']
     #Lets programmer know that the bot has been activated
@@ -49,7 +49,7 @@ async def on_ready():
             channel_ctx = bot.get_channel(channel)
             if channel_ctx is not None:
                     await channel_ctx.send("Bot is now online! Validating messages, DO NOT SEND ANY COMMANDS TO SPOTBOT DURING THIS TIME UNTIL COMPLETE MESSAGE IS SENT!")  # Message to send on startup
-                    await search_past(enabled=True, ctx=channel_ctx, channel=channel)
+                    await search_past(enabled=True, ctx=channel_ctx, channel=channel, bot=bot)
                     await channel_ctx.send("Validate lost songs complete! [WIP]")  # Message to send on startup
             else:
                 print("Channel not found. Please check the channel | ID:" + channel)
@@ -662,7 +662,7 @@ async def fetch_message_history(channel_ID):
 
     return messages
 
-async def search_past(ctx, enabled=False, channel=""):
+async def search_past(ctx, bot, enabled=False, channel=""):
     checkEmoji = "☑️"
     rEmoji = "🔁" 
     if(enabled == True):
@@ -672,28 +672,32 @@ async def search_past(ctx, enabled=False, channel=""):
         # to make it work with only one file, surprisingly all the playlist file handling is done in dupCheck()
         for msg in messages:
             try:
-                # Get the link info
-                link_info = config_tools.getSpotifyID(msg.content)
-                content_type = link_info['type']
-                spotify_id = link_info['id']
+                #checks if message is valid before proceding
+                msg_valid = channel_tools.msg_validity_check(msg, bot)
+                content_type = None #sets contnet type to none to start
+                if(msg_valid):
+                    # Get the link info
+                    link_info = config_tools.getSpotifyID(msg.content)
+                    content_type = link_info['type']
+                    spotify_id = link_info['id']
 
-                # ignore playlists and non spotify links
-                if content_type == 'track' or link_info != None:
-                    # Get the playlist link associate with the channel
-                    playlist_link = channel_tools.return_playlist_from_channel(sent_channel=msg.channel.id, playlist_channel=PLAYLIST_CHANNEL)
-                    check = dupCheck(msg, spotify_id, playlist_link) #checks to see if the correct emoji is on the message
+                    # ignore playlists and non spotify links
+                    if content_type == 'track':
+                        # Get the playlist link associate with the channel
+                        playlist_link = channel_tools.return_playlist_from_channel(sent_channel=msg.channel.id, playlist_channel=PLAYLIST_CHANNEL)
+                        check = dupCheck(msg, spotify_id, playlist_link) #checks to see if the correct emoji is on the message
                     
-                    # If the song is not a duplicate, add to the playlist
-                    if check == False:
-                        try:
-                            playlist_update.sendOff(msg, spotify_id)
+                        # If the song is not a duplicate, add to the playlist
+                        if check == False:
+                            try:
+                                await playlist_update.sendOff(msg, spotify_id)
+                                if(await channel_tools.emojiCheck(msg) == False):#check to see if message needs an emoji or not
+                                    await channel_tools.addEmoji(emoji=checkEmoji, msg=msg) #if song is a repeat put a repeat emoji on it
+                            except Exception as e:
+                                config_tools.logs(message="Error when sending song off to spotify: " + str(e), log_file=r'logs/error.log')
+                        else:
                             if(await channel_tools.emojiCheck(msg) == False):#check to see if message needs an emoji or not
                                 await channel_tools.addEmoji(emoji=checkEmoji, msg=msg) #if song is a repeat put a repeat emoji on it
-                        except Exception as e:
-                            config_tools.logs(message="Error when sending song off to spotify: " + str(e), log_file=r'logs/error.log')
-                    else:
-                        if(await channel_tools.emojiCheck(msg) == False):#check to see if message needs an emoji or not
-                            await channel_tools.addEmoji(emoji=checkEmoji, msg=msg) #if song is a repeat put a repeat emoji on it
             #if the dupcheck check fails
             except discord.NotFound:
                 config_tools.logs(message=f"{pgrm_signature}: Message with ID {msg.id} not found", log_file=r'logs/error.log')
@@ -704,9 +708,9 @@ async def search_past(ctx, enabled=False, channel=""):
             except Exception as e:
                 config_tools.logs(message="Error whilst checking for duplicate: " + str(e), log_file=r'logs/error.log')
                 
-    
-        config_tools.logs("Grabbed past messages", log_file=r'logs/channel_tools.log')
-        print("Past finished searching for channel " + str(channel))
+        
+                config_tools.logs("Grabbed past messages", log_file=r'logs/channel_tools.log')
+                print("Past finished searching for channel " + str(channel))
 
 
 #checks for duplicates before sending songs off to uri.txt and recording in database

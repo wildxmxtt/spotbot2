@@ -12,8 +12,18 @@ import re, datetime
 pgrm_signature = "playlist_update.py: "
 SECRET_DATABASE = 'setup.json'
 
-async def sendOff(msg, spotify_id): 
-    tracks = []
+async def sendOff(msg, spotify_id=None, tracks=None, batch_send = False): 
+    
+
+    #If the bacth send is false make a new tracks array and append to it
+    if batch_send == False and spotify_id != None:
+        tracks = []
+        tracks.append(spotify_id)
+
+    if(tracks == None):
+        print("Error variable tracks can not be of type: None")
+        config_tools.logs(message="Error variable tracks can not be of type: None")
+        return
 
     pgrm_signature = "playlist_update.py: "
 
@@ -30,8 +40,6 @@ async def sendOff(msg, spotify_id):
 
     # Get the playlist ID
     playlist_ID = config_tools.getSpotifyID(playlist_link)
-
-    tracks.append(spotify_id)
 
     # add the song to the playlist using the SP object
     sp.playlist_add_items(playlist_ID['id'], tracks)
@@ -304,3 +312,9 @@ def get_track_name_and_artist(trackID):
 
     return [str(track['name']), str(artists[0]['name'])] # Index 0 is title, index 1 is artist. This allows the caller to
                                                          # customize their output however they choose.
+
+
+def create_song_batch_list(spotify_id, track_list):
+    track_list = []
+    track_list.append(spotify_id)
+    return track_list

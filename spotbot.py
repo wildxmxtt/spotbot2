@@ -14,6 +14,7 @@ import io
 import database_tools
 import supporting_scripts.config_tools as config_tools
 import supporting_scripts.channel_tools as channel_tools
+import time
 pgrm_signature = "spotbot.py: "
 
 # Define the setup JSON
@@ -49,8 +50,8 @@ async def on_ready(bot=bot):
             channel_ctx = bot.get_channel(channel)
             if channel_ctx is not None:
                     await channel_ctx.send("Bot is now online! Validating messages, DO NOT SEND ANY COMMANDS TO SPOTBOT DURING THIS TIME UNTIL COMPLETE MESSAGE IS SENT!")  # Message to send on startup
-                    await search_past(enabled=True, ctx=channel_ctx, channel=channel, bot=bot)
-                    await channel_ctx.send("Validate lost songs complete! [WIP]")  # Message to send on startup
+                    songs = await search_past(enabled=True, ctx=channel_ctx, channel=channel, bot=bot)
+                    await channel_ctx.send("COMPLETE: Validated lost songs! Songs added from channel was: " + str(len(songs)))  # Message to send on startup
             else:
                 print("Channel not found. Please check the channel | ID:" + channel)
 
@@ -471,54 +472,58 @@ async def sendLeaderBoardEmbed(ctx, results, title):
 #This is to grab the past songs that have been sent to the channel
 @bot.command()
 async def grabPast(ctx):
-    checkEmoji = "☑️"
-    rEmoji = "🔁"
-    pastSongMsgList = []
-    
+    channel_id = ctx.channel.id
     await ctx.reply("Grabbing songs now please wait until FINISHED is sent\nGrabbing & Flitering Past Messages (this could take a while).....")                
 
+    pastSongMsgList = await search_past(bot=bot, ctx=ctx, enabled=True, channel=channel_id)
+    # checkEmoji = "☑️"
+    # rEmoji = "🔁"
+    # pastSongMsgList = []
+    
+    # await ctx.reply("Grabbing songs now please wait until FINISHED is sent\nGrabbing & Flitering Past Messages (this could take a while).....")                
 
-    # Loop through available playlists
-    for playlist in PLAYLIST_CHANNEL:
-        # Clear the uri.txt file
-        file1 = open("uri.txt", "w+")
-        file1.close()
 
-        # Get messages from each channel 
-        messages = await fetch_message_history(playlist['channel']) #FIX THIS
+    # # Loop through available playlists
+    # for playlist in PLAYLIST_CHANNEL:
+    #     # Clear the uri.txt file
+    #     file1 = open("uri.txt", "w+")
+    #     file1.close()
 
-        for msg in messages:
-            try:
-                # Get the link info
-                link_info = config_tools.getSpotifyID(msg.content)
+    #     # Get messages from each channel 
+    #     messages = await fetch_message_history(playlist['channel']) #FIX THIS
 
-                content_type = link_info['type']
-                spotify_id = link_info['id']
+    #     for msg in messages:
+    #         try:
+    #             # Get the link info
+    #             link_info = config_tools.getSpotifyID(msg.content)
+
+    #             content_type = link_info['type']
+    #             spotify_id = link_info['id']
                 
-                playlist_link = channel_tools.return_playlist(sent_channel=msg.channel.id, playlist_channel=PLAYLIST_CHANNEL)
+    #             playlist_link = channel_tools.return_playlist(sent_channel=msg.channel.id, playlist_channel=PLAYLIST_CHANNEL)
 
-                if spotify_id and content_type != 'playlist':
-                    isDup = dupCheck(msg, spotify_id, playlist_link) # check if duplicate, add to the DB if not
-                    if(isDup == False):
-                        pastSongMsgList.append(spotify_id)
-                        if(await channel_tools.emojiCheck(ctx.message) == False): # check to see if message needs an emoji or not
-                            await channel_tools.addEmoji(emoji=checkEmoji, msg=msg) # if song is a repeat put a repeat emoji on it
-                    else:
-                        if(await channel_tools.emojiCheck(msg) == False): # check to see if message needs an emoji or not
-                            await channel_tools.addEmoji(emoji=rEmoji, msg=msg) # if song is a repeat put a repeat emoji on it
-            except TypeError:
-                print(f"[+] Not a valid link. Here's the link: {msg.content}")
-            except Exception as e:
-                print(f"[!] An unexpected error has occured: {e}")
+    #             if spotify_id and content_type != 'playlist':
+    #                 isDup = dupCheck(msg, spotify_id, playlist_link) # check if duplicate, add to the DB if not
+    #                 if(isDup == False):
+    #                     pastSongMsgList.append(spotify_id)
+    #                     if(await channel_tools.emojiCheck(ctx.message) == False): # check to see if message needs an emoji or not
+    #                         await channel_tools.addEmoji(emoji=checkEmoji, msg=msg) # if song is a repeat put a repeat emoji on it
+    #                 else:
+    #                     if(await channel_tools.emojiCheck(msg) == False): # check to see if message needs an emoji or not
+    #                         await channel_tools.addEmoji(emoji=rEmoji, msg=msg) # if song is a repeat put a repeat emoji on it
+    #         except TypeError:
+    #             print(f"[+] Not a valid link. Here's the link: {msg.content}")
+    #         except Exception as e:
+    #             print(f"[!] An unexpected error has occured: {e}")
 
 
     # send off the spotifyIDs file to be uploaded to Spotify
-    if(pastSongMsgList != []):
-        print(pgrm_signature + "Attempting to send songs off to spotify")
-        playlist_update.sendOffList(channel=ctx.channel.id, id_list=pastSongMsgList)
+    # if(pastSongMsgList != []):
+    #     print(pgrm_signature + "Attempting to send songs off to spotify")
+    #     playlist_update.sendOffList(channel=ctx.channel.id, id_list=pastSongMsgList)
 
-    else:
-        config_tools.logs('GrabPast Found No New songs, nothing was sent to spotify')
+    # else:
+    #     config_tools.logs('GrabPast Found No New songs, nothing was sent to spotify')
 
     # send a success after the loop
     await ctx.send("Messages Grabbed, Process Complete, FINISHED: " + str(len(pastSongMsgList)) +" new songs were found with grabPast" + "\nHere is the Spotify Link: ")
@@ -665,11 +670,21 @@ async def fetch_message_history(channel_ID):
 async def search_past(ctx, bot, enabled=False, channel=""):
     checkEmoji = "☑️"
     rEmoji = "🔁" 
+
+    #if search past is being ran on startup, then channel will be ""
+    if(channel == ""):
+        channel_ID = ctx.last_message.channel.id
+    else: #if search_past is called by grabpast then set the channel to the channel ID
+        channel_ID = channel
+
+
     if(enabled == True):
         config_tools.logs("Grabbing past messages.....", log_file=r'logs/channel_tools.log')
-        messages = [messages async for messages in ctx.history(limit=500000)] #If your bot is not reading all of your messages this number may have to be higher
+        messages = await fetch_message_history(channel_ID=channel_ID)
+        # messages = [messages async for messages in ctx.history(limit=500000)] #If your bot is not reading all of your messages this number may have to be higher 500000
 
         # to make it work with only one file, surprisingly all the playlist file handling is done in dupCheck()
+        raw_track_list = []
         for msg in messages:
             try:
                 #checks if message is valid before proceding
@@ -685,20 +700,17 @@ async def search_past(ctx, bot, enabled=False, channel=""):
                     if content_type == 'track':
                         # Get the playlist link associate with the channel
                         playlist_link = channel_tools.return_playlist_from_channel(sent_channel=msg.channel.id, playlist_channel=PLAYLIST_CHANNEL)
-                        check = dupCheck(msg, spotify_id, playlist_link) #checks to see if the correct emoji is on the message
+                        check = dupCheck(msg, spotify_id, playlist_link, autoAdd2DB=True) #checks to see if the correct emoji is on the message, SWITCH TO FALSE WHEN re-write is made && songs are added to db AFTER added to playlist
                     
-                        # If the song is not a duplicate, add to the playlist
+                        # If the song is not a duplicate, add song to the raw_track_list to be sent off
                         if check == False:
-                            try:
-                                await playlist_update.sendOff(msg, spotify_id)
-                                if(await channel_tools.emojiCheck(msg) == False):#check to see if message needs an emoji or not
-                                    await channel_tools.addEmoji(emoji=checkEmoji, msg=msg) #if song is a repeat put a repeat emoji on it
-                            except Exception as e:
-                                config_tools.logs(message="Error when sending song off to spotify: " + str(e), log_file=r'logs/error.log')
-                        else:
+                            raw_track_list.append(spotify_id)      
+                            #need a re-write of this to make it to where emojis are only placed on a song, after it has been added to playlist worry about this later for now 1/7/2025 - MattW
                             if(await channel_tools.emojiCheck(msg) == False):#check to see if message needs an emoji or not
-                                await channel_tools.addEmoji(emoji=checkEmoji, msg=msg) #if song is a repeat put a repeat emoji on it
-            #if the dupcheck check fails
+                                await channel_tools.addEmoji(emoji=rEmoji, msg=msg) #if song is a repeat put a repeat emoji on it
+                            else:
+                                await channel_tools.addEmoji(emoji=checkEmoji, msg=msg) #if song is new put a check emoji on it
+                                
             except discord.NotFound:
                 config_tools.logs(message=f"{pgrm_signature}: Message with ID {msg.id} not found", log_file=r'logs/error.log')
             except discord.Forbidden:
@@ -707,14 +719,51 @@ async def search_past(ctx, bot, enabled=False, channel=""):
                 config_tools.logs(message=f"{pgrm_signature}: Failed to fetch message {msg.id}", log_file=r'logs/error.log')
             except Exception as e:
                 config_tools.logs(message="Error whilst checking for duplicate: " + str(e), log_file=r'logs/error.log')
-                
-        
-                config_tools.logs("Grabbed past messages", log_file=r'logs/channel_tools.log')
-                print("Past finished searching for channel " + str(channel))
 
+        #check to see if every song in the batch list is valid. If there is one false thrown, add songs one at a time & let send off fail for those songs
+        results = config_tools.validate_spotify_uris(uri_list=raw_track_list)
+
+        if(False in results):
+            i = 0
+            #send off songs one at a time if there was a false thrown, let the songs that were false fail. (This is done to ensre if we got a false positve those songs are still uploaded)
+            for spotify_id in raw_track_list:
+                #set a sleep here for 20 seconds every time an increment of 50 is hit to prevent spotify ratelimit
+                try:
+                    i = i + 1
+                    await playlist_update.sendOff(msg=msg, spotify_id=spotify_id, tracks=None, batch_send=False)
+                except Exception as e:
+                    config_tools.logs(message="Error when sending song off to spotify: " + str(e), log_file=r'logs/error.log')
+                if(i % 50 == 0):
+                    await ctx.send("Awaiting for 20 seconds to prevent spotify rate limit, happens for every 50 songs sent to spotify that were not all sent at once")
+                    time.sleep(20) #sleep for 20 seconds after songs have been added to aviod rate limit
+                    await ctx.send("continuting to add songs sleep, over")
+        else: 
+            #send off the batch of songs 50 at a time, if the track list is not empty
+            master_track_list = []
+            #generate a list of lists (aka master track list), if the list is greater than 50 
+            if(len(raw_track_list) < 50):
+                master_track_list = config_tools.split_large_list(input_list = raw_track_list)
+            else:
+                master_track_list.append(raw_track_list)
+
+            #go through each track_list in master track list
+            for track_list in master_track_list:
+                if(track_list != []):
+                    try:
+                        await playlist_update.sendOff(msg=msg, spotify_id=None, tracks=track_list, batch_send=True)
+                    except Exception as e:
+                        config_tools.logs(message="Error when sending song off to spotify: " + str(e), log_file=r'logs/error.log')
+        
+        # This is here to only add songs AFTER the songs have been added to the playlist; Opening a ticket for now as tokenization issues are far more importiant 1/7/2025 - MattW
+        # songlink = playlist_update.song_link_extract(msg)
+        # database_tools.add_song_2_db(msg=msg, songlink=songlink)
+
+        config_tools.logs("Grabbed past messages", log_file=r'logs/channel_tools.log')
+        print("Past finished searching for channel " + str(channel))
+        return raw_track_list
 
 #checks for duplicates before sending songs off to uri.txt and recording in database
-def dupCheck(msg, spotify_id, playlist_link):
+def dupCheck(msg, spotify_id, playlist_link, autoAdd2DB = True):
     songlink = playlist_update.song_link_extract(msg)
     
     # opening a text files (new)
@@ -736,13 +785,16 @@ def dupCheck(msg, spotify_id, playlist_link):
         return True
     else: # If a match is not found
         # Add the song ID into the database
-        print(pgrm_signature + 'NEW! | String', songlink , 'Not Found')
-        cur.execute("INSERT INTO songs (spotify_ID, playlist_ID, sender_ID, timestamp, discord_message_id) VALUES (?, ?, ?, ?, ?)", 
-                    (spotify_id, playlist_ID, getSender(msg), getTimestamp(msg), getMessageID(msg)))
-        conn.commit()
-        
-        conn.close()
-        return False
+        if(autoAdd2DB == True):
+            print(pgrm_signature + 'NEW! | String', songlink , 'Not Found')
+            cur.execute("INSERT INTO songs (spotify_ID, playlist_ID, sender_ID, timestamp, discord_message_id) VALUES (?, ?, ?, ?, ?)", 
+                        (spotify_id, playlist_ID, getSender(msg), getTimestamp(msg), getMessageID(msg)))
+            conn.commit()
+            
+            conn.close()
+            return False
+
+
 
 
 def uritxt(link):

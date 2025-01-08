@@ -69,5 +69,29 @@ def getSpotifyID(url):
         'id': None
     }
 
+
+def validate_spotify_uris(uri_list, min_length=20, max_length=25):
+    # Regular expression for Spotify URIs: alphanumeric strings within a length range
+    pattern = re.compile(rf'^[A-Za-z0-9]{{{min_length},{max_length}}}$')
+    
+    # Validate each URI in the list
+    results = [bool(pattern.match(uri)) for uri in uri_list]
+    
+    return results
+
 def file_name(file_name = __file__):
     return(os.path.basename(file_name))
+
+def split_large_list(input_list, chunk_size=50):
+    """
+    Splits a list into smaller lists with a maximum size of `chunk_size`.
+    
+    Args:
+        input_list (list): The list to be split.
+        chunk_size (int): Maximum number of items in each chunk (default is 50).
+    
+    Returns:
+        list of lists: A list containing the smaller chunks.
+    """
+    # Split the input list into chunks of size `chunk_size`
+    return [input_list[i:i + chunk_size] for i in range(0, len(input_list), chunk_size)]

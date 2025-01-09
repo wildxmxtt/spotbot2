@@ -127,7 +127,7 @@ async def search(ctx, arg = None):
 
     playlist_id_pattern = r"playlist/(.*?)\?"
     try:
-        playlist_regex_result = re.search(playlist_id_pattern, str(playlist_link[0]))
+        playlist_regex_result = re.search(playlist_id_pattern, str(playlist_link))
         playlist_id = str(playlist_regex_result.group(1))
     except AttributeError as e:
         print(f"\033[35m[!] {pgrm_signature}WARNING. Non-standard spotify playlist link detected. Attempting another playlist ID search with a new regex pattern...\033[0m")
@@ -552,58 +552,60 @@ async def on_message(msg):
 
         spotify_id = link_info['id']
         content_type = link_info['type']
+        msg_valid = channel_tools.msg_validity_check(msg, bot)
+        content_type = None #sets contnet type to none to start
+        if(msg_valid):
+            # If the ID is present in the message and the link is for a track
+            if spotify_id and content_type != 'playlist':
+                # Loop through available playlists
+                for playlist in PLAYLIST_CHANNEL:
+                    # If the link is sent into the chat specified
+                    if msg.channel.id == int(playlist['channel']):
+                        if not "The random song you got was:" in str(msg.content) and not "!search" in str(msg.content) and not "!waves" in str(msg.content): # Without this it would catch all songs comand as a new link for some reason.
+                            print(pgrm_signature + "Valid Spotify Link")
 
-        # If the ID is present in the message and the link is for a track
-        if spotify_id and content_type != 'playlist':
-            # Loop through available playlists
-            for playlist in PLAYLIST_CHANNEL:
-                # If the link is sent into the chat specified
-                if msg.channel.id == int(playlist['channel']):
-                    if not "The random song you got was:" in str(msg.content) and not "!search" in str(msg.content) and not "!waves" in str(msg.content): # Without this it would catch all songs comand as a new link for some reason.
-                        print(pgrm_signature + "Valid Spotify Link")
+                            checkEmoji = "☑️"
+                            rEmoji = "🔁" 
 
-                        checkEmoji = "☑️"
-                        rEmoji = "🔁" 
+                            #get the correct playlist link associated with the channel
+                            playlist_link = channel_tools.return_playlist_from_channel(sent_channel=msg.channel.id, playlist_channel=PLAYLIST_CHANNEL)
+                            # Check to see if the song is duplicate, if not add it to the DB
+                            test = dupCheck(msg, spotify_id, playlist_link)
 
-                        #get the correct playlist link associated with the channel
-                        playlist_link = channel_tools.return_playlist_from_channel(sent_channel=msg.channel.id, playlist_channel=PLAYLIST_CHANNEL)
-                        # Check to see if the song is duplicate, if not add it to the DB
-                        test = dupCheck(msg, spotify_id, playlist_link)
+                            # Decides what emoji to add based on if it is a duplicate or not
+                            if(test == True):
+                                await channel_tools.addEmoji(emoji=rEmoji, msg=msg) #if song is a repeat put a repeat emoji on it
+                            else:
+                                # Once added to DB send to spotify to add to playlist
+                                print(f"{await playlist_update.sendOff(msg=msg, spotify_id=spotify_id)}")
+                                await channel_tools.addEmoji(emoji=checkEmoji, msg=msg) #if song is a repeat put a repeat emoji on it
 
-                        # Decides what emoji to add based on if it is a duplicate or not
-                        if(test == True):
-                            await msg.add_reaction (rEmoji)
-                        else:
-                            # Once added to DB send to spotify to add to playlist
-                            print(f"{await playlist_update.sendOff(msg=msg, spotify_id=spotify_id)}")
-                            await msg.add_reaction(checkEmoji) #adds emoji when song is added to playlist
+                                # Warn users that previous songs may not be accounted for as grabPast has NOT been called
+                                if(int(grab_past_flag) == 0):
+                                    await msg.reply("WARNING GRAB PAST FLAG IS STILL ZERO, IF THERE ARE NO PAST SONGS YOU NEED TO GRAB. SET THE GRAB PAST FLAG TO ZERO IN setup.json AND RESTART spotbot.py. THIS WILL CAUSE ERRORS ELSEWISE")
+                                
+                                # Check for acheivements (connect to db, get song count)
+                                conn = sqlite3.connect('databases/spotbot.db')
+                                cur = conn.cursor()
 
-                            # Warn users that previous songs may not be accounted for as grabPast has NOT been called
-                            if(int(grab_past_flag) == 0):
-                                await msg.reply("WARNING GRAB PAST FLAG IS STILL ZERO, IF THERE ARE NO PAST SONGS YOU NEED TO GRAB. SET THE GRAB PAST FLAG TO ZERO IN setup.json AND RESTART spotbot.py. THIS WILL CAUSE ERRORS ELSEWISE")
-                            
-                            # Check for acheivements (connect to db, get song count)
-                            conn = sqlite3.connect('databases/spotbot.db')
-                            cur = conn.cursor()
+                                cur.execute("SELECT COUNT(*) FROM songs WHERE playlist_ID = ?", (config_tools.getSpotifyID(playlist_link)['id'],))
+                                songs = cur.fetchone()[0]
 
-                            cur.execute("SELECT COUNT(*) FROM songs WHERE playlist_ID = ?", (config_tools.getSpotifyID(playlist_link)['id'],))
-                            songs = cur.fetchone()[0]
+                                # Every 10 songs check for achievements (For perfromance)
+                                if (songs % 5 == 0 or songs == 69):
+                                    # Get the acheivement string (if any)
+                                    celebration = achievements.checkAchievement(songs, grab_past_flag)
 
-                            # Every 10 songs check for achievements (For perfromance)
-                            if (songs % 5 == 0 or songs == 69):
-                                # Get the acheivement string (if any)
-                                celebration = achievements.checkAchievement(songs, grab_past_flag)
+                                    # Get duration achievement (if any)
+                                    duration = achievements.checkDurationAchievement(playlist_update.get_playlist_duration(playlist_link))
 
-                                # Get duration achievement (if any)
-                                duration = achievements.checkDurationAchievement(playlist_update.get_playlist_duration(playlist_link))
-
-                                # If there is a celebration, send the message
-                                if(celebration):
-                                    await msg.channel.send(celebration)
-                                if(duration):
-                                    await msg.channel.send(duration)
-                            
-                            conn.close()
+                                    # If there is a celebration, send the message
+                                    if(celebration):
+                                        await msg.channel.send(celebration)
+                                    if(duration):
+                                        await msg.channel.send(duration)
+                                
+                                conn.close()
 
 
         else:

@@ -97,7 +97,7 @@ def emoji_list_match(list1, list2):
         return False
 
 async def addEmoji(msg, emoji = "☑️"):
-    hasEmoji = emojiCheck(msg)
+    hasEmoji = await emojiCheck(msg)
     if(hasEmoji == False):
         print(msg.content)
         await msg.add_reaction (emoji)
@@ -152,8 +152,8 @@ def return_playlist_from_channel(sent_channel, playlist_channel):
 def get_command_list(bot_instance):
     return [f"{bot_instance.command_prefix}{cmd.name}" for cmd in bot_instance.commands]
 
-def check_if_msg_from_bot(msg):
-    if msg.author == bot.user:
+def check_if_msg_from_bot(msg, bot):
+    if msg.author.name == bot.user.name:
         #is from bot
         return True
     else: 
@@ -162,7 +162,7 @@ def check_if_msg_from_bot(msg):
 def check_msg_for_commands(msg, bot):
     command_list = get_command_list(bot)
 
-    if any(command in msg.content for command in command_list):
+    if any(command.lower() in msg.content.lower() for command in command_list):
         # await msg.channel.send(f"Command detected: {msg.content}")
         return True
     else:
@@ -178,7 +178,7 @@ def contains_spotify_word(msg):
 
 #checks several cases to ensure message is valid
 def msg_validity_check(msg, bot):
-    fromBot = check_if_msg_from_bot (msg=msg)
+    fromBot = check_if_msg_from_bot (msg=msg, bot=bot)
     if(fromBot == True):
         #Has message from bot
         return False

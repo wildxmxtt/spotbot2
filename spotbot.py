@@ -19,7 +19,7 @@ pgrm_signature = "spotbot.py: "
 
 # Define the setup JSON
 SECRET_DATABASE = 'setup.json'
-
+check_past_ran = False
 # Sets up our secret information into the application from secrets.db
 config_data = config_tools.config_data(SECRET_DATABASE)
 CLIENT_ID = config_data['client_id']
@@ -44,7 +44,7 @@ async def on_ready(bot=bot):
     #Lets programmer know that the bot has been activated
     print(pgrm_signature + 'SpotifyBot: ON')
     
-    if str(check_past_on_boot).upper() == 'TRUE':
+    if str(check_past_on_boot).upper() == 'TRUE' and check_past_ran == False:
         for channel_item in config_data['playlist_channel']:
             channel = int(channel_item['channel'])
             channel_ctx = bot.get_channel(channel)
@@ -52,6 +52,7 @@ async def on_ready(bot=bot):
                     await channel_ctx.send("Bot is now online! Validating messages, DO NOT SEND ANY COMMANDS TO SPOTBOT DURING THIS TIME UNTIL COMPLETE MESSAGE IS SENT!")  # Message to send on startup
                     songs = await search_past(enabled=True, ctx=channel_ctx, channel=channel, bot=bot)
                     await channel_ctx.send("COMPLETE: Validated lost songs! Songs added from channel was: " + str(len(songs)))  # Message to send on startup
+                    check_past_ran = True
             else:
                 print("Channel not found. Please check the channel | ID:" + channel)
 
@@ -476,54 +477,6 @@ async def grabPast(ctx):
     await ctx.reply("Grabbing songs now please wait until FINISHED is sent\nGrabbing & Flitering Past Messages (this could take a while).....")                
 
     pastSongMsgList = await search_past(bot=bot, ctx=ctx, enabled=True, channel=channel_id)
-    # checkEmoji = "☑️"
-    # rEmoji = "🔁"
-    # pastSongMsgList = []
-    
-    # await ctx.reply("Grabbing songs now please wait until FINISHED is sent\nGrabbing & Flitering Past Messages (this could take a while).....")                
-
-
-    # # Loop through available playlists
-    # for playlist in PLAYLIST_CHANNEL:
-    #     # Clear the uri.txt file
-    #     file1 = open("uri.txt", "w+")
-    #     file1.close()
-
-    #     # Get messages from each channel 
-    #     messages = await fetch_message_history(playlist['channel']) #FIX THIS
-
-    #     for msg in messages:
-    #         try:
-    #             # Get the link info
-    #             link_info = config_tools.getSpotifyID(msg.content)
-
-    #             content_type = link_info['type']
-    #             spotify_id = link_info['id']
-                
-    #             playlist_link = channel_tools.return_playlist(sent_channel=msg.channel.id, playlist_channel=PLAYLIST_CHANNEL)
-
-    #             if spotify_id and content_type != 'playlist':
-    #                 isDup = dupCheck(msg, spotify_id, playlist_link) # check if duplicate, add to the DB if not
-    #                 if(isDup == False):
-    #                     pastSongMsgList.append(spotify_id)
-    #                     if(await channel_tools.emojiCheck(ctx.message) == False): # check to see if message needs an emoji or not
-    #                         await channel_tools.addEmoji(emoji=checkEmoji, msg=msg) # if song is a repeat put a repeat emoji on it
-    #                 else:
-    #                     if(await channel_tools.emojiCheck(msg) == False): # check to see if message needs an emoji or not
-    #                         await channel_tools.addEmoji(emoji=rEmoji, msg=msg) # if song is a repeat put a repeat emoji on it
-    #         except TypeError:
-    #             print(f"[+] Not a valid link. Here's the link: {msg.content}")
-    #         except Exception as e:
-    #             print(f"[!] An unexpected error has occured: {e}")
-
-
-    # send off the spotifyIDs file to be uploaded to Spotify
-    # if(pastSongMsgList != []):
-    #     print(pgrm_signature + "Attempting to send songs off to spotify")
-    #     playlist_update.sendOffList(channel=ctx.channel.id, id_list=pastSongMsgList)
-
-    # else:
-    #     config_tools.logs('GrabPast Found No New songs, nothing was sent to spotify')
 
     # send a success after the loop
     await ctx.send("Messages Grabbed, Process Complete, FINISHED: " + str(len(pastSongMsgList)) +" new songs were found with grabPast" + "\nHere is the Spotify Link: ")
@@ -709,9 +662,9 @@ async def search_past(ctx, bot, enabled=False, channel=""):
                             raw_track_list.append(spotify_id)      
                             #need a re-write of this to make it to where emojis are only placed on a song, after it has been added to playlist worry about this later for now 1/7/2025 - MattW
                             if(await channel_tools.emojiCheck(msg) == False):#check to see if message needs an emoji or not
-                                await channel_tools.addEmoji(emoji=rEmoji, msg=msg) #if song is a repeat put a repeat emoji on it
+                                await channel_tools.addEmoji(emoji=checkEmoji, msg=msg) #if song is a repeat put a repeat emoji on it
                             else:
-                                await channel_tools.addEmoji(emoji=checkEmoji, msg=msg) #if song is new put a check emoji on it
+                                await channel_tools.addEmoji(emoji=rEmoji, msg=msg) #if song is new put a check emoji on it
                                 
             except discord.NotFound:
                 config_tools.logs(message=f"{pgrm_signature}: Message with ID {msg.id} not found", log_file=r'logs/error.log')

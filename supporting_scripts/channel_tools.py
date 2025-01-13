@@ -96,8 +96,12 @@ def emoji_list_match(list1, list2):
     else:
         return False
 
-async def addEmoji(msg, emoji = "☑️"):
-    hasEmoji = await emojiCheck(msg)
+async def addEmoji(msg, emoji = "☑️", validateSpotbotEmoji = True):
+    #assume message dose not have a 
+    hasEmoji = False
+
+    if(validateSpotbotEmoji == True):
+        hasEmoji = await emojiCheck(msg)
     if(hasEmoji == False):
         print(msg.content)
         await msg.add_reaction (emoji)

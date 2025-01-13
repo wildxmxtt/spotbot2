@@ -95,46 +95,26 @@ async def sLink(ctx):
 async def search(ctx, arg = None):
     # Begin input validation
     spotify_link = str(arg)
-    input_validation = r"^https://open.spotify.com/track/[a-zA-Z0-9]{22}$|^https://open.spotify.com/track/[a-zA-Z0-9]{22}\?si=[a-zA-Z0-9]{16}$"
-    validation_result = re.search(input_validation, spotify_link)
+    idInformation = config_tools.getSpotifyID(spotify_link)
+
+    song_id = idInformation['id']
+
     if arg == None:
         await ctx.reply("Please provide an argument for this command.")
         return
-    elif validation_result == None:
+    elif id == None:
         await ctx.reply("Please provide a valid Spotify link as an argument.\n```Examples:\nhttps://open.spotify.com/track/foo\nhttps://open.spotify.com/track/foo?si=bar```")
         return
     # End input validation
 
     # Begin song ID extraction
-    song_id_pattern = r"^https://open.spotify.com/track/(.*?)\?"
-    try:
-        regex_result = re.search(song_id_pattern, spotify_link)
-
-        song_id = str(regex_result.group(1))
-        song_id_wildcard = "%" + str(regex_result.group(1)) + "%"
-        
-        name_and_artist = playlist_update.get_track_name_and_artist(song_id)
-    except AttributeError as e:
-        print(f"\033[35m[!] {pgrm_signature}WARNING! Non-standard spotify link detected. Attempting another song ID search with a new regex pattern...\033[0m")
-        song_id_pattern = r"^https://open.spotify.com/track/(.*)"
-        regex_result = re.search(song_id_pattern, spotify_link)
-        song_id = str(regex_result.group(1))
-        song_id_wildcard = "%" + song_id + "%"
-        name_and_artist = playlist_update.get_track_name_and_artist(song_id)
+    name_and_artist = playlist_update.get_track_name_and_artist(song_id)
+    song_id_wildcard = "%" + song_id + "%"
     # End song ID extraction
     
     # Get current configured playlist for the Discord channel
     playlist_link = channel_tools.return_playlist(sent_channel=ctx.channel.id, playlist_channel=PLAYLIST_CHANNEL)
-
-    playlist_id_pattern = r"playlist/(.*?)\?"
-    try:
-        playlist_regex_result = re.search(playlist_id_pattern, str(playlist_link))
-        playlist_id = str(playlist_regex_result.group(1))
-    except AttributeError as e:
-        print(f"\033[35m[!] {pgrm_signature}WARNING. Non-standard spotify playlist link detected. Attempting another playlist ID search with a new regex pattern...\033[0m")
-        playlist_id_pattern = r"playlist/(.*)"
-        playlist_regex_result = re.search(playlist_id_pattern, playlist_id)
-        playlist_id = str(playlist_regex_result.group(1))
+    playlist_id = config_tools.getSpotifyID(playlist_link)['id']
     # End playlist ID extraction
 
     # Begin SQLite query
@@ -576,10 +556,9 @@ async def waves(ctx, arg = None):
         if ctx.channel.id == int(playlist['channel']):
             try:
                 # Regex to ensure argument passed to command is acceptable
-                uri_regex = r'https://open.spotify.com/track/(.+?)\?si='
-                wave_uri = re.search(uri_regex, arg)
+                wave_uri = config_tools.getSpotifyID(arg)['id']
                 # Format URL string for async request
-                wave_url = 'https://scannables.scdn.co/uri/plain/png/000000/white/640/spotify:track:%s' % (wave_uri.group(1))
+                wave_url = 'https://scannables.scdn.co/uri/plain/png/000000/white/640/spotify:track:%s' % (wave_uri)
                 # Async request for a response from variable: wave_url
                 async with aiohttp.ClientSession() as wave_session:
                     async with wave_session.get(wave_url) as wave_resp:
@@ -588,7 +567,7 @@ async def waves(ctx, arg = None):
                             return await ctx.send('Wavecode not found')
                         wave_img = io.BytesIO(await wave_resp.read())
                 # Sends image structured in Bytes as a discord.File in the channel
-                await ctx.send(file=discord.File(wave_img, '%s_wavecode.png' % (wave_uri.group(1))))
+                await ctx.send(file=discord.File(wave_img, '%s_wavecode.png' % (wave_uri)))
 
             # Catching unexpected errors
             except Exception as err:

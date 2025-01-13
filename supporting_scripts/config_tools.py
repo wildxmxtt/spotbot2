@@ -44,7 +44,7 @@ def logs(message, log_file = r'logs/default.log', pgrm_signature = __file__):
 def getSpotifyID(url):
     # Regex patterns for regular, uri, and shortened spotify links. AI code.
     patterns = [
-        r'open\.spotify\.com/(track|playlist)/([a-zA-Z0-9]+)',
+        r'https://open\.spotify\.com/(track|playlist)/([a-zA-Z0-9]+)',
         r'spotify:(track|playlist):([a-zA-Z0-9]+)',
         r'spotify\.link/([a-zA-Z0-9]+)'
     ]

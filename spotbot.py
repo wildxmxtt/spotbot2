@@ -324,7 +324,7 @@ async def reactChamp(ctx):
 
         field_value = f"{message[1]} reaction(s) - "
 
-        field_value += f"[{nameAndArtist[0]} - {nameAndArtist[1]}]({message[2]})"
+        field_value += f"[{nameAndArtist[0]} - {nameAndArtist[1]}](https://open.spotify.com/track/{message[2]})"
 
         embed.add_field(name=f"{loops}. {member.display_name}", value=field_value, inline=False)
         loops += 1
@@ -399,7 +399,7 @@ async def localreactChamp(ctx):
 
                 field_value = f"{message[1]} reaction(s) - "
 
-                field_value += f"[{nameAndArtist[0]} - {nameAndArtist[1]}]({message[2]})"
+                field_value += f"[{nameAndArtist[0]} - {nameAndArtist[1]}](https://open.spotify.com/track/{message[2]})"
 
                 embed.add_field(name=f"{loops}. {member.display_name}", value=field_value, inline=False)
                 loops += 1

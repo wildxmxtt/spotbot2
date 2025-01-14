@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Spotify Playlist Info</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Continued Setup</h1>
+    <p>Welcome to the Setup Page for our steps it will be like this</p>
+    <ol>
+        <li>Set up Spotify Side</li>
+        <li>Set Discord Side</li>
+        <li>Customize install</li>
+        <li>Deploy</li>
+        <li>Advanced Setup</li>
+    </ol>
+    <p>If you know what to do / have it done & are looking to do an advanced setup please click here</p>
+    <form action="{{ url_for('index') }}" method="get">
+        <button type="submit">Previous</button>
+    </form>
+    <form action="{{ url_for('advanced_setup') }}" method="get">
+        <button type="submit">Advanced Setup Page</button>
+    </form>
+    
+    <form action="{{ url_for('save_setup') }}" method="post">
+        <p>#1: Spotify Setup </p>
+        <ul>Please go to: <a href="https://developer.spotify.com/dashboard">Spotify Developer Webpage</a></ul>
+        <ul>You need to click login at the top right hand corner of the page </ul>
+        <ul>After logging in with your Spotify account, you want to select create app</ul>
+        <ul>Once your app has been created you need to give it:</ul>
+        <ol>
+            <li>App Name</li>
+            <li>App Description</li>
+            <li>Redirect URI's</li>
+            <p>For the Redirect URIs please use the following, copy and paste one by one, ensure to click add on the dev portal</p>
+            <p>http://127.0.0.1:5000/</p>
+            <p>http://127.0.0.1:5000/redirect</p>
+            <p>http://localhost:5000/callback/</p>
+            <p>http://localhost:5000/redirect</p>
+            <p>http://localhost:5000/redirect/</p>
+            <p>http://127.0.0.1:5000/callback</p>
+            <p>http://localhost:5000/callback</p>
+            <li>Then select the Web API checkbox, this is the only API you will need</li>
+            <li>Then read and agree with the dev terms of service, and then click save</li>
+            <li>Next after clicking save, click on settings</li>
+            <li>Copy the Client ID & copy and paste it here:</li>
+            <input type="text" id="client_id" name="client_id" value="{{ client_id }}" required><br><br>
+            <li>View the Client Secret & copy and paste it here:</li>
+            <input type="text" id="client_secret" name="client_secret" value="{{ client_secret }}" required><br><br>
+        </ol>
+
+        <p>#2: Discord Setup </p>
+        <ul>Please go to: <a href="https://discord.com/developers">Discord Developer Webpage</a></ul>
+        <ul>Login with your discord credentials</ul>
+        <ul>After logging in with your Discord account, you want to be on the applications tab</ul>
+        <ul>On the applications tab you want to select the New Application button</ul>
+        <ul>Give the bot a name</ul>
+        <ul>Create the application</ul>
+        <ul>Click on the installation tab</ul>
+        <ul>Un-select User Install</ul>
+        <ul>Select Discord Provided Link</ul>
+        <ul>For the SCOPES Please Select:</ul>
+        <li>Add Reactions</li>
+        <li>Connect</li>
+        <li>Read Message History</li>
+        <li>Send Messages</li>
+        <li>Send Messages in Threads</li>
+        <li>Use Embeded Activies</li>
+        <li>Use External Emojis</li>
+        <li>Use External Stickers</li>
+        <li>Use Slash Commands</li>
+        <li>View Audit Logs</li>
+        <li>View Channels</li>
+        <li>View Server Insights</li>
+        <ul>Go to the Bot tab</ul>
+        <li>Turn on the Public Bot</li>
+        <li>Turn on Persence Intent</li>
+        <li>Turn on Server Memebers Intent</li>
+        <li>Turn on Message Content Intent</li>
+        <li>Press reset access token and paste that access token in here:</li>
+        <input type="text" id="discord_token" name="discord_token" value="{{ discord_token }}" required><br><br>
+
+        <h3>Customize your Spotbot Install</h3>
+        <p>Select features to install:</p>
+        {% for feature, installed in installed_features.items() %}
+            <label>
+                <input type="checkbox" name="features" value="{{ feature }}"
+                       {% if installed %}checked{% endif %}>
+                {{ feature }}
+            </label><br>
+        {% endfor %}
+
+        <li>Place your Spotify Links that you want spotbot to view in the playlist_link column and discord_channel bot to read.</li>
+        <li>You point your playslist link at a channel(s) you want the bot to insert songs into</li>
+        
+        <h3>Getting Discord Chat ID's</h3>
+        <li>Go to your discord settings and turn on developer mode in advanced</li>
+        <li>Then grab your channel ID's you want spotbot to view by right clicking on the channel then getting the ID</li>
+
+        <h3>Chats Configuration</h3>
+        <form action="{{ url_for('update_chats') }}" method="post">
+            <table border="1">
+                <thead>
+                    <tr>
+                        {% for column in column_names %}
+                            <th>{{ column }}</th>
+                        {% endfor %}
+                        <th>Delete</th> <!-- Add Delete header column -->
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in chats %}
+                        {% set row_index = loop.index0 %}
+                        <tr>
+                            {% for column in row %}
+                                <td><input type="text" name="row_{{ row_index }}_{{ loop.index0 }}" value="{{ column }}"></td>
+                            {% endfor %}
+                            <td>
+                                <!-- Delete text box that requires typing DELETE -->
+                                <input type="text" name="delete_row_{{ row_index }}" placeholder="Type DELETE">
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <br>
+            <button type="submit">Update</button>
+        </form>
+        
+        <!-- Form for adding a new row
+        <form action="{{ url_for('add_chat_row') }}" method="post">
+            <button type="submit">+ Add new row +</button>
+        </form> -->
+        
+    </form>
+</body>
+</html>

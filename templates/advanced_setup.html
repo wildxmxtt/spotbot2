@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Advanced Setup</title>
+    <script>
+        function showPopup(message) {
+            alert(message);
+        }
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Advanced Setup</h1>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <script>
+                showPopup("{{ messages[0] }}");
+            </script>
+        {% endif %}
+    {% endwith %}
+
+    <form action="{{ url_for('save_advanced_setup') }}" method="post">
+        <label for="client_id">Spotify Client ID:</label>
+        <input type="text" id="client_id" name="client_id" value="{{ client_id }}" required><br><br>
+        
+        <label for="client_secret">Spotify Client Secret:</label>
+        <input type="text" id="client_secret" name="client_secret" value="{{ client_secret }}" required><br><br>
+        
+        <label for="discord_token">Discord Bot Token:</label>
+        <input type="text" id="discord_token" name="discord_token" value="{{ discord_token }}" required><br><br>
+        
+        <br><br>
+        <h3>Descriptions</h3> 
+        <label>Spotify Client ID: Public Identifier for Spotify Application</label> <br><br>
+        <label>Spotify Client Secret: Secret Identifier for Spotify Application, your access to the application</label> <br><br>
+        <label>Discord Token: Token to run your Discord bot running Spotbot2 code (Spotbot.py)</label>  <br><br>
+        
+        <h3>Extra Features</h3>
+        <p>Select features to install:</p>
+        {% for feature, installed in installed_features.items() %}
+            <label>
+                <input type="checkbox" name="features" value="{{ feature }}"
+                       {% if installed %}checked{% endif %}>
+                {{ feature }}
+            </label><br>
+        {% endfor %}
+        <br>
+        <h4>This Submit button below will save Spotify Client ID, Spotify Client Secret, and the Discord Bot Token</h4>    
+        <button type="submit">Save/Update</button>
+    </form>
+
+    <br><br>
+
+    <h3>Chats Configuration</h3>
+    <form action="{{ url_for('update_chats') }}" method="post">
+        <table border="1">
+            <thead>
+                <tr>
+                    {% for column in column_names %}
+                        <th>{{ column }}</th>
+                    {% endfor %}
+                    <th>Delete</th> <!-- Add Delete header column -->
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in chats %}
+                    {% set row_index = loop.index0 %}
+                    <tr>
+                        {% for column in row %}
+                            <td><input type="text" name="row_{{ row_index }}_{{ loop.index0 }}" value="{{ column }}"></td>
+                        {% endfor %}
+                        <td>
+                            <!-- Delete text box that requires typing DELETE -->
+                            <input type="text" name="delete_row_{{ row_index }}" placeholder="Type DELETE">
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <br>
+        <h4>This Update button below will update the chats table with your Playlist Links & Discrod Channels</h4>    
+        <button type="submit">Update</button>
+    </form>
+    
+    <!-- Form for adding a new row -->
+    <form action="{{ url_for('add_chat_row') }}" method="post">
+        <button type="submit">+ Add new row +</button>
+    </form>
+    
+
+    <br>
+    <button onclick="window.history.back()">Previous</button>
+</body>
+</html>

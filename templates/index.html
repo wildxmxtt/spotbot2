@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Spotbot2 Setup Landing Page</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Spotbot2 Setup</h1>
+    <h3>Spotify Playlist Info</h3>
+    <p>The amount of songs in the playlist {{ playlist_name }} are: {{ num_songs }} </p>
+
+    <form action="{{ url_for('link_spotify') }}" method="get">
+        <button type="submit">Link Spotify</button>
+    </form>
+
+    <form action="{{ url_for('continue_setup') }}" method="post">
+        <button type="submit">Continue Setup</button>
+    </form>
+
+    <!-- <form action="{{ url_for('advanced_setup') }}" method="get">
+        <button type="submit">Advanced Setup</button>
+    </form> -->
+
+    <form action="{{ url_for('close_app') }}" method="post">
+        <button type="submit">Close App</button>
+    </form>
+
+    <h3>View Databases</h3>
+    <ul>
+        <li><a href="{{ url_for('view_database', db_name='spotbot') }}">View Spotbot Database</a></li>
+        <li><a href="{{ url_for('view_database', db_name='secrets') }}">View Secrets Database</a></li>
+    </ul>
+
+</body>
+</html>

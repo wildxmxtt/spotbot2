@@ -1,63 +1,26 @@
 from os import path
 import json
 import sqlite3
+import playlist_update
 
 pgrm_signature = "database_tools.py"
 
 
-def initialize_database(file, playlist_array):
+def initialize_milestones(file, playlist_array):
     # Check to see if the database file already exists
-    db_exists = path.exists(file)
-
-    # If the databse doesn't exist, create the tables
-    if not db_exists:
-        tables = [
-            f"""
-            CREATE TABLE IF NOT EXISTS songs (
-            song_table_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-            spotify_ID TEXT,
-            playlist_ID TEXT,
-            sender_ID INTEGER,
-            timestamp TEXT,
-            discord_message_id TEXT
-            )
-            """,
-            f"""
-            CREATE TABLE IF NOT EXISTS playlist_duration_milestones (
-            playlist_id TEXT,
-            milestone INTEGER,
-            reached_at DATETIME,
-            PRIMARY KEY (playlist_id, milestone)
-            )
-            """]
-
-        conn = sqlite3.connect(file)
-        cur = conn.cursor()
-
-        # Execute the statements
-        cur.execute(tables[0])
-        cur.execute(tables[1])
-
-        print(f"{pgrm_signature}: Fresh database initialized.")
-
-        # Commit the changes
-        conn.commit()
-        conn.close()
-
-        # Break from the function if fresh tables are created
-        return True
+    if not path.exists(file):
+        print(f'ERROR {pgrm_signature}: {file} does not exist!')
     
     # If the database exists connect and playlist_duration tables
     conn = sqlite3.connect(file)
     cur = conn.cursor()
 
     for playlist in playlist_array:
-        playlist_ID = playlist[1].split('/')[-1].split('?')[0] # Extract playlit ID
+        playlist_ID = playlist['playlist'].split('/')[-1].split('?')[0] # Extract playlist ID
 
         # If the playlist ID is in the database return false
         cur.execute('SELECT playlist_id from playlist_duration_milestones WHERE playlist_id = ?', (playlist_ID, ))
         entries = cur.fetchone()
-
         if entries:
             conn.close()
             return True
@@ -75,42 +38,72 @@ def initialize_database(file, playlist_array):
 
 # Returns setup information. Indexes are as follows:
 # 0 client id, 1 client secret, 2 discord token, 3 grab past flag, 4 leaderboards flag, 5 server name
-def get_setup_info(file, server_name):
-    # Connect to database
-    conn = sqlite3.connect(file)
-    cur = conn.cursor()
-
-    # Get server setup info for the server
-    cur.execute("SELECT * FROM setup WHERE server_name = ?", (server_name,))
-
-    sql_results = cur.fetchone()
-    conn.close()
+def get_setup_info(file_name):
+    with open(file_name, 'r') as file:
+        data = json.load(file)
 
     # Return information
-    return sql_results
+    return data
 
 # Returns tuples of playlist information. Index 0 is the playlist link, index 1 is the discord channel ID
-def get_playlist_array(file, server_name):
-    conn = sqlite3.connect(file)
-    cur = conn.cursor()
+def get_playlist_array(file_name):
+    with open(file_name, 'r') as file:
+        data = json.load(file)
 
-    cur.execute("SELECT playlist_link,discord_channel FROM chats WHERE server_name = ?", (server_name,))
-
-    sql_results = cur.fetchall()
-    conn.close()
-
-    return sql_results
-
+    return data["playlist_channel"]
+    
 # Returns the playlist link using the chat ID
-def get_playlist_link(file, chat_ID):
-    conn = sqlite3.connect(file)
+def get_playlist_link(file_name, chat_ID=None):
+    with open(file_name, 'r') as file:
+        data = json.load(file)
+
+    # Extract playlist info from JSON
+    playlist_channel = data["playlist_channel"]
+
+    if chat_ID is None:
+        # flask get tracks test
+        first_playlist = playlist_channel[0]["playlist"]
+
+        # Return the first playlist link available
+        return first_playlist
+    
+    else:
+        # Regular use: return playlist link defined by chat ID from JSON
+        for playlist in playlist_channel:
+            if chat_ID in playlist["channel"]:
+                return playlist["playlist"]
+
+def add_song_2_db(msg, songlink, playlist_ID, songBatch=None, spotify_id=None, batchOfSongs=False):
+    # playlist_link = channel_tools.return_playlist(sent_channel=msg.channel.id, playlist_channel=PLAYLIST_CHANNEL)
+    # playlist_ID = config_tools.getSpotifyID(playlist_link)['id']
+    # songlink = playlist_update.song_link_extract(msg)
+    
+    #get message vars 
+    senderId = msg.author.id
+    timestamp = msg.created_at
+    formatted_timestamp = timestamp.strftime("%Y-%m-%d %H:%M:%S") # Format the timestamp as a string
+    message_id = str(msg.id)
+
+    # opening a text files (new)
+    conn = sqlite3.connect('databases/spotbot.db')
     cur = conn.cursor()
+    #if batch of songs
+    if(batchOfSongs == False and spotify_id != None and spotify_id != ""):
+        print(pgrm_signature + 'NEW! | String', songlink , 'Not Found')
+        cur.execute("INSERT INTO songs (spotify_ID, playlist_ID, sender_ID, timestamp, discord_message_id) VALUES (?, ?, ?, ?, ?)", 
+                    (spotify_id, playlist_ID, senderId, formatted_timestamp, message_id))
+        conn.commit()
+    else:
+        #if the song batch does not equal none
+        if(songBatch != [] or songBatch != None):
+            #Runs a list of songs in a batch
+            for spotify_id in songBatch:
+                print(pgrm_signature + 'NEW! | String', songlink , 'Not Found')
+                cur.execute("INSERT INTO songs (spotify_ID, playlist_ID, sender_ID, timestamp, discord_message_id) VALUES (?, ?, ?, ?, ?)", 
+                            (spotify_id, playlist_ID, senderId, formatted_timestamp, message_id))
+                conn.commit()
 
-    # query for the playlist ID
-    cur.execute("SELECT playlist_link FROM chats WHERE discord_channel = ?", (chat_ID,))
-
-    playlist_link = cur.fetchone()
     conn.close()
-
-    return playlist_link
+    return
+    # return False
 

@@ -89,7 +89,7 @@ async def sLink(ctx):
     playlist_channel = config_data['playlist_channel']
     playlist_link = channel_tools.return_playlist_from_channel(sent_channel=ctx.channel.id, playlist_channel=playlist_channel)
     #playlist_links = await channel_tools.return_playlists(playlist_channel=playlist_channel)
-    await ctx.reply(str(channel.name) + "'s playlist is:" + playlist_link + " Discord Channel ID: " + str(channel_ID))
+    await ctx.reply(str(channel.name) + "'s playlist is:" + playlist_link)
 
 @bot.command()
 async def search(ctx, arg = None):

@@ -19,7 +19,6 @@ pgrm_signature = "spotbot.py: "
 
 # Define the setup JSON
 SECRET_DATABASE = 'setup.json'
-check_past_ran = False
 # Sets up our secret information into the application from secrets.db
 config_data = config_tools.config_data(SECRET_DATABASE)
 CLIENT_ID = config_data['client_id']
@@ -39,6 +38,7 @@ bot = commands.Bot(command_prefix='!', case_insensitive=True, intents=intents)
 
 @bot.event
 async def on_ready(bot=bot):
+    check_past_ran = False
     config_data = config_tools.config_data(SECRET_DATABASE)
     check_past_on_boot = config_data['check_past_on_boot']
     #Lets programmer know that the bot has been activated

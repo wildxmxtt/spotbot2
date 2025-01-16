@@ -542,8 +542,10 @@ async def on_message(msg):
 
 
         else:
-            print(pgrm_signature + "Not valid Spotify channel or spotify link in: " + str(msg.channel.id) + " | spotbot looking at channels: " + str(channels))
             await bot.process_commands(msg)
+
+    else:
+        print(pgrm_signature + "Not valid Spotify channel or spotify link in: " + str(msg.channel.id) + " | spotbot looking at channels: " + str(channels))
 
 
 @bot.command()

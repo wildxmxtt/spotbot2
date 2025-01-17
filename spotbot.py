@@ -15,7 +15,7 @@ import database_tools
 import supporting_scripts.config_tools as config_tools
 import supporting_scripts.channel_tools as channel_tools
 import time
-pgrm_signature = "spotbot.py: "
+pgrm_signature = "spotbot.py"
 
 # Define the setup JSON
 SECRET_DATABASE = 'setup.json'
@@ -177,8 +177,6 @@ async def r(ctx):
     # Get the number of total songs in the playlist
     cur.execute('SELECT COUNT(*) FROM songs')
     count = cur.fetchone()[0]
-
-    print(f"There are {count} song IDs in the songs table.")
 
     # Get all spotify_IDs from the songs table
     cur.execute('SELECT spotify_ID FROM songs')
@@ -454,12 +452,12 @@ async def sendLeaderBoardEmbed(ctx, results, title):
 @bot.command()
 async def grabPast(ctx):
     channel_id = ctx.channel.id
-    await ctx.reply("Grabbing songs now please wait until FINISHED is sent\nGrabbing & Flitering Past Messages (this could take a while).....")                
+    await ctx.reply("Grabbing songs now please wait until **finished** is sent. this could take a while...")                
 
     pastSongMsgList = await search_past(bot=bot, ctx=ctx, enabled=True, channel=channel_id)
 
     # send a success after the loop
-    await ctx.send("Messages Grabbed, Process Complete, FINISHED: " + str(len(pastSongMsgList)) +" new songs were found with grabPast" + "\nHere is the Spotify Link: ")
+    await ctx.send("Messages Grabbed, Process Complete, **finished**: " + str(len(pastSongMsgList)) +" new songs were found with grabPast")
     await sLink(ctx)
         
     update_gp_flag()
@@ -588,14 +586,14 @@ async def fetch_message_history(channel_ID):
         except discord.errors.Forbidden:
             print(f"Bot does not hav epermission to acces channel{channel_ID}")
     
-    print(f"Channel found: {channel.name} (ID: {channel_ID}, Type: {type(channel)})")
+    print(f"Grabbing Past in {channel.name}")
 
     if not isinstance(channel, discord.TextChannel):
         print(f"Channel {channel_ID} is not a text channel.")
     
     try:
         messages = [message async for message in channel.history(limit=500000)]
-        print(f"Successfully fetched {len(messages)} messages from channel {channel.id}")
+        print(f"Successfully fetched {len(messages)} songs")
     except discord.errors.Forbidden:
         print(f"Bot doesn't have permission to read message history in channel {channel.id}")
     except Exception as e:
@@ -695,7 +693,7 @@ async def search_past(ctx, bot, enabled=False, channel=""):
         # database_tools.add_song_2_db(msg=msg, songlink=songlink)
 
         config_tools.logs("Grabbed past messages", log_file=r'logs/channel_tools.log')
-        print("Past finished searching for channel " + str(channel))
+        print(f"Search finished for channel {bot.get_channel(channel_ID).name}")
         return raw_track_list
 
 #checks for duplicates before sending songs off to uri.txt and recording in database
@@ -807,8 +805,6 @@ def update_gp_flag():
             json.dump(dictObj, json_file, 
                         indent=4,  
                         separators=(',',': '))
-    
-        print(pgrm_signature + 'Successfully updated setup.json')
  
 # Get the message sender data
 def getSender(msg):

@@ -49,9 +49,9 @@ async def on_ready(bot=bot):
             channel = int(channel_item['channel'])
             channel_ctx = bot.get_channel(channel)
             if channel_ctx is not None:
-                    await channel_ctx.send("Bot is now online! Validating messages, DO NOT SEND ANY COMMANDS TO SPOTBOT DURING THIS TIME UNTIL COMPLETE MESSAGE IS SENT!")  # Message to send on startup
+                    await channel_ctx.send("Bot is now online! Validating messages.")  # Message to send on startup
                     songs = await search_past(enabled=True, ctx=channel_ctx, channel=channel, bot=bot)
-                    await channel_ctx.send("COMPLETE: Validated lost songs! Songs added from channel was: " + str(len(songs)))  # Message to send on startup
+                    await channel_ctx.send(f"Complete: Validated lost songs! {str(len(songs))} songs added.")  # Message to send on startup
                     check_past_ran = True
             else:
                 print("Channel not found. Please check the channel | ID:" + channel)
@@ -187,7 +187,7 @@ async def r(ctx):
         # get a random id
         random_song = random.choice(spotify_ids)
         link = f"https://open.spotify.com/track/{random_song}"
-        print(f"The random song you got was: {link}")
+        print(f"Random song retrieved: {link}")
         await ctx.reply(f"The random song you got was: {link}")
     else: # if there are no songs
         print(f"There are no songs yet.")
@@ -720,7 +720,7 @@ def dupCheck(msg, spotify_id, playlist_link, autoAdd2DB = True):
     else: # If a match is not found
         # Add the song ID into the database
         if(autoAdd2DB == True):
-            print(pgrm_signature + 'NEW! | String', songlink , 'Not Found')
+            print(pgrm_signature + ': NEW! | String', songlink , 'Not Found')
             cur.execute("INSERT INTO songs (spotify_ID, playlist_ID, sender_ID, timestamp, discord_message_id) VALUES (?, ?, ?, ?, ?)", 
                         (spotify_id, playlist_ID, getSender(msg), getTimestamp(msg), getMessageID(msg)))
             conn.commit()

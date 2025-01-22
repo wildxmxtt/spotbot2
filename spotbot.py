@@ -589,7 +589,7 @@ async def fetch_message_history(channel_ID):
     
     try:
         messages = [message async for message in channel.history(limit=500000)]
-        print(f"Successfully fetched {len(messages)} songs")
+        print(f"Successfully fetched {len(messages)} messages")
     except discord.errors.Forbidden:
         print(f"Bot doesn't have permission to read message history in channel {channel.id}")
     except Exception as e:

@@ -174,10 +174,6 @@ async def r(ctx):
     conn = sqlite3.connect('databases/spotbot.db')
     cur = conn.cursor()
 
-    # Get the number of total songs in the playlist
-    cur.execute('SELECT COUNT(*) FROM songs')
-    count = cur.fetchone()[0]
-
     # Get all spotify_IDs from the songs table
     cur.execute('SELECT spotify_ID FROM songs')
     spotify_ids = [row[0] for row in cur.fetchall()]

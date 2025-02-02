@@ -38,27 +38,42 @@ http://127.0.0.1:5000/redirect/
     
     b. Next, the Bot tab > Create Bot 
     
-    c. Press reset access token (refimage6), copy it, and paste that token in its respective place in `setup.json`
+    c. Retrieve the token (may need to reset it), copy it, and paste that token in its respective place in `setup.json`
     
-    d. Copy and past access token into setup.json
+    d. Enable the following Intents:
     
-    e. Turn on switches just like refimage7
+    ```
+    Presence Intent
+    Server Members Intent
+    Message Content Intent
+    ```
     
-    f. In the sidebar, you'll find the OAuth2 go to general and place http://localhost:5000/callback in redirecturi (refimage8)
+    e. In the sidebar, you'll find the OAuth2 go to general. Input `http://localhost:5000/callback` in redirects
     
-    g. In the sidebar, go to URL Genreator. Fill out feilds just like refimage 9 & 10 **NOTE you only need *bot* & *messages.read* to use this type of bot when looking at refimage9** 
-    
-    h. Invite the bot to the server you want it to run in
-    
-    i. Grab the link to the chat you want the bot to run in; right click on a discord channel and select copyID (refimage11)
-    
-    j. Paste the ID you recieved in the "discord_channel" : "place the discord channel you want the bot to read here" inside of the setup.json file
+    f. In the sidebar, go to URL Genreator. Enable both the `bot` and `messages.read` scopes. Then enable the following permissions:
 
-3. Get spotify playlist link that the bot will add to
+    ![Permissions](images/permissions.png)
     
-    a. Add that link into setup.json in the correct field ex:"https://open.spotify.com/playlist/0XM....8226c884a3d" (needs to be a playlist you made on your own personal spotify account)
+    g. Invite the bot to the server you want it to run in
     
-4. All fields in `setup.json` should be filled out and look like refimage12. A template `setup.json` can be extracted from [`setup.zip`](https://github.com/wildxmxtt/spotbot2/blob/main/database.py).
+    h. Grab the `channel ID` of a chat you want the bot to run in. You can configure one or more chats, each. Each chat must have its own unique Spotify playlist. Retrieve the `channel ID` by right clicking on a discord channel and select copy channel ID
+    
+    i. Paste the ID you recieved in the inside of the `setup.json` file alongside the Spotify playlist link (must be a playlist you made on your own personal Spotify account). Example:
+
+```json
+"playlist_channel": [
+        {
+            "playlist": "https://open.spotify.com/playlist/example",
+            "channel": "12345"
+        },
+        {
+            "playlist": "https://open.spotify.com/playlist/anotherExample",
+            "channel": "67890"
+        }
+]
+```
+    
+4. All fields in `setup.json` should be populated. A template `setup.json` can be extracted from [`setup.zip`](https://github.com/wildxmxtt/spotbot2/blob/main/database.py).
 
 5. Install requrements.txt to your machine 
     

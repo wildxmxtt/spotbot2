@@ -14,23 +14,31 @@ A discord bot that scrapes users spotify links from a set channel and automatica
 
 
 ## Install
-1. Go to https://developer.spotify.com/dashboard/ refimage1 in image_refrences.pdf 
-    
-    a. Press Login
+1. Create a spotify App:
 
-    b. Create App (refimage2)
+    a. Go to https://developer.spotify.com/dashboard/ and Login
+
+    c. Create an App
     
-    c. Copy and paste the corrosponging client id and client secret in their respective places in setup.json (refimage3)
+    d. Copy and paste the client id and client secret from the Spotify app. These will be placed in their respective places in `setup.json`
     
-    d. select Edit Settings and fillout fields detailed in (refimage4)
+    e. select Edit Settings and add the following Redirect URIs
+
+```
+http://localhost:5000/callback
+http://localhost:5000/redirect
+http://localhost:5000/redirect/
+http://127.0.0.1:5000/redirect
+http://127.0.0.1:5000/redirect/
+```
     
- 2. Go to https://discord.com/developers/
+ 2. Create a Discord Bot
     
-    a. Create a new application (refimage5)
+    a. On https://discord.com/developers/ go to Applications > New Applications
     
-    b. Go to the bot tab > select create bot 
+    b. Next, the Bot tab > Create Bot 
     
-    c. Press reset access token (refimage6) and paste that token in "discord_token" : "place token here" in setup.json
+    c. Press reset access token (refimage6), copy it, and paste that token in its respective place in `setup.json`
     
     d. Copy and past access token into setup.json
     

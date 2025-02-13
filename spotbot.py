@@ -1,6 +1,6 @@
 from discord.ext import commands
-import Ranking
-import Leaderboard
+from objects.Ranking import Ranking
+from objects.Leaderboard import Leaderboard
 import re
 import sqlite3
 import discord
@@ -229,7 +229,7 @@ async def leaderboard(ctx):
 
     # Add rankings
     for result in results:
-        ranking = Ranking(user=result[0], plays=result[1])
+        ranking = Ranking(user=result[0], value=result[1])
         leaderboard.addRanking(ranking)
 
     # Send the embed
@@ -268,7 +268,8 @@ async def thismonth(ctx):
 
     # Creat leaderboard object
     title="This Months Stats"
-    leaderboard = Leaderboard(title=title)
+    description = "The top 10 users who have sent the most songs this month:"
+    leaderboard = Leaderboard(title=title, description=description)
 
     # Add rankings
     for result in results:
@@ -453,7 +454,7 @@ async def sendLeaderBoardEmbed(ctx, leaderboard):
 
     # Create the embed
     embed = discord.Embed(title=Leaderboard.getTitle(leaderboard), color=0x1DB954)
-    if(leaderboard.getDesription(leaderboard)):
+    if(Leaderboard.getDescription(leaderboard)):
         embed.description = Leaderboard.getDescription(leaderboard)
 
     loops = 1
@@ -462,7 +463,7 @@ async def sendLeaderBoardEmbed(ctx, leaderboard):
         # Make sure not to add more than 10 ranks
         if loops >= 10:
             discord_id = Ranking.getUser(ranking)
-            song_count = Ranking.getPlays(ranking)
+            song_count = Ranking.getValue(ranking)
             username = usernames.get(discord_id, "Unknown")
             
             # Add the new information to the response

@@ -1,4 +1,4 @@
-class Leadederboard:
+class Leaderboard:
     def __init__(self, title, description, url=None):
         self.title = title
         self.description = description

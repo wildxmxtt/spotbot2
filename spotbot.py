@@ -229,7 +229,7 @@ async def leaderboard(ctx):
 
     # Add rankings
     for result in results:
-        ranking = Ranking(user=result[0], value=result[1])
+        ranking = Ranking(user=result[0], value=f"{result[1]} songs")
         leaderboard.addRanking(ranking)
 
     # Send the embed
@@ -273,7 +273,7 @@ async def thismonth(ctx):
 
     # Add rankings
     for result in results:
-        ranking = Ranking(user=result[0], plays=result[1])
+        ranking = Ranking(user=result[0], value=f"{result[1]} songs")
         leaderboard.addRanking(ranking)
     
     await sendLeaderBoardEmbed(ctx=ctx, leaderboard=leaderboard)
@@ -342,7 +342,7 @@ async def reactChamp(ctx):
 
         # Create reaction number, and song and artist string
         value = f"{result[1]} reaction(s) - "
-        value += f"[{nameAndArtist[0]} - {nameAndArtist[1]}](https://open.spotify.com/track/{message[2]})"
+        value += f"[{nameAndArtist[0]} - {nameAndArtist[1]}](https://open.spotify.com/track/{result[2]})"
 
         # Create ranking with above values, then add to the leaderboard
         ranking = Ranking(user=user, value=value)
@@ -418,7 +418,7 @@ async def localreactChamp(ctx):
 
                 # Create reaction number, and song and artist string
                 value = f"{result[1]} reaction(s) - "
-                value += f"[{nameAndArtist[0]} - {nameAndArtist[1]}](https://open.spotify.com/track/{message[2]})"
+                value += f"[{nameAndArtist[0]} - {nameAndArtist[1]}](https://open.spotify.com/track/{result[2]})"
 
                 # Create ranking with above values, then add to the leaderboard
                 ranking = Ranking(user=user, value=value)
@@ -461,14 +461,14 @@ async def sendLeaderBoardEmbed(ctx, leaderboard):
 
     for ranking in rankings:
         # Make sure not to add more than 10 ranks
-        if loops >= 10:
+        if loops <= 10:
             discord_id = Ranking.getUser(ranking)
             song_count = Ranking.getValue(ranking)
             username = usernames.get(discord_id, "Unknown")
             
             # Add the new information to the response
             # response += (f"\n{username:8s} | {song_count:15d}")
-            embed.add_field(name=f"{loops}. {username}", value=f"{song_count} songs", inline=False)
+            embed.add_field(name=f"{loops}. {username}", value=f"{song_count}", inline=False)
             loops += 1
         else:
             # Only print the first 10

@@ -50,7 +50,7 @@ http://127.0.0.1:5000/redirect/
     
     e. In the sidebar, you'll find the OAuth2 go to general. Input `http://localhost:5000/callback` in redirects
     
-    f. In the sidebar, go to URL Genreator. Enable both the `bot` and `messages.read` scopes. Then enable the following permissions:
+    f. In the sidebar, go to URL Generator. Enable both the `bot` and `messages.read` scopes. Then enable the following permissions:
 
     ![Permissions](images/permissions.png)
     
@@ -92,11 +92,15 @@ http://127.0.0.1:5000/redirect/
     flask run --host=0.0.0.0 --port=5000
     ```
 
-    b. Go to https://localhost:5000 (or address of host)
+    b. Go to http://localhost:5000 (or address of host)
     
     c. Login with your spotify username and password
     
-    d. Once logged in on the webpage you should get the number of songs in the playlist you placed in setup.json refimage(13 & 15)
+    d. Once logged in on the webpage you should get the number of songs in the playlist you placed in setup.json
+
+    ![flaskNumberOfSongs](images/flaskNumberOfSongs.png)
+    
+    ![spotifyNumberOfSongs](images/spotifyNumberOfSongs.png)
     
     e. Ctrl + c in terminal (app.py will never need to be ran again, as it is only used to **generate** a token for your bot to use)
     
@@ -107,17 +111,24 @@ http://127.0.0.1:5000/redirect/
 
     (If you dont have past songs you want to grab skip steps b and c and set the grabpast flag to 1 in setup.json or else it will break the code)
     
-    a. Once in the terminal it should read "spotbot.py: SpotifyBot: ON" (refimage16)
+    a. Once in the terminal it should read `spotbot.py: SpotifyBot: ON`
+    
+    ![spotifyBotOn](images/spotifyBotOn.png)
     
     b. Type `!grabPast` in the channel you specified in step 2j; This will grab all past spotify links sent in the chat **If you want to run this command and you have more than 500000 messages in your chat go to *line 62* in spotbot.py and increase the number as much as needed** 
     
-    c. Once `!grabPast` is ran you should see it act like refrence (image18), grabpast can only be ran once, if this needs to be changed go to the setup.json file and set the flag back to 0 instead of 1
+    c. Once `!grabPast` is ran you should see similar output to the below image. Grabpast can only execute once. If your particular situation calls for multiple grabpast executions, go to the setup.json file and set the flag to 0.
 
-8. Now when songs are sent to the channel it will automatically send them to spotify! (refimage 20 & 21)
+    ![grabPastExample](images/grabPastExample.png)
 
+8. You may now provide Spotify links in the channel. Spotbot will react to the message with a ☑️ emoji, indicating your song has been added to the configured Spotify playlist!
+
+![sendToChannel](images/sendToChannel.png)
+
+![addedToPlaylist](images/addedToPlaylist.png)
 
 ## Contributing
-If something is wrong, [Open an issue.](http://github.com/wildxmxtt/spotbot2/issues/new)
+If something is wrong, [open an issue.](http://github.com/wildxmxtt/spotbot2/issues/new)
 
 This project exists thanks to all the people who contribute.
 

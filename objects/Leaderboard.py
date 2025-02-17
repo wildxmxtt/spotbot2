@@ -1,5 +1,5 @@
 class Leaderboard:
-    ''' A colletion of Rakning objects that is sent via a Discord embed'''
+    ''' A colletion of Ranking objects that is sent via a Discord embed'''
     def __init__(self, title, description):
         self.title = title
         self.description = description

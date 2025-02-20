@@ -1,4 +1,6 @@
 from discord.ext import commands
+from objects.Ranking import Ranking
+from objects.Leaderboard import Leaderboard
 import re
 import sqlite3
 import discord
@@ -214,9 +216,18 @@ async def leaderboard(ctx):
     # Fetch all
     results = cur.fetchall()
 
-    # Send the embed
+    # Creating leaderboards object
     title="All Time Leaderboard"
-    await sendLeaderBoardEmbed(ctx, results, title)
+    description="The top 10 users who have sent the most songs:"
+    leaderboard = Leaderboard(title=title, description=description)
+
+    # Add rankings
+    for result in results:
+        ranking = Ranking(user=result[0], value=f"{result[1]} songs")
+        leaderboard.addRanking(ranking)
+
+    # Send the embed
+    await sendLeaderBoardEmbed(ctx=ctx, leaderboard=leaderboard)
 
     # Close the connection
     conn.close()
@@ -249,9 +260,17 @@ async def thismonth(ctx):
     # Fetch all
     results = cur.fetchall()
 
-    # Send the embed
+    # Create leaderboard object
     title="This Months Stats"
-    await sendLeaderBoardEmbed(ctx, results, title)
+    description = "The top 10 users who have sent the most songs this month:"
+    leaderboard = Leaderboard(title=title, description=description)
+
+    # Add rankings
+    for result in results:
+        ranking = Ranking(user=result[0], value=f"{result[1]} songs")
+        leaderboard.addRanking(ranking)
+    
+    await sendLeaderBoardEmbed(ctx=ctx, leaderboard=leaderboard)
 
     # Close the connection
     conn.close()
@@ -304,27 +323,29 @@ async def reactChamp(ctx):
 
     # make and send the embed
     title = f"Reaction Champions for {calendar.month_name[current_month]}"
-    embed = discord.Embed(title=title, color=0x1DB954)
-    embed.description = "The top 5 highest reacted songs this month"
+    description="The top 5 highest reacted songs this month"
+    leaderboard = Leaderboard(title=title, description=description)
 
-    loops = 1
-    guild = ctx.guild
-    for message in top_messages:
+    # Add rankings
+    for result in top_messages:
         # Get username
-        member = guild.get_member(message[3])
+        user=result[3]
 
         # Get track name and artist(s)
-        nameAndArtist = playlist_update.get_track_name_and_artist(message[2])
+        nameAndArtist = playlist_update.get_track_name_and_artist(result[2])
 
-        field_value = f"{message[1]} reaction(s) - "
+        # Create reaction number, and song and artist string
+        value = f"{result[1]} reaction(s) - "
+        value += f"[{nameAndArtist[0]} - {nameAndArtist[1]}](https://open.spotify.com/track/{result[2]})"
 
-        field_value += f"[{nameAndArtist[0]} - {nameAndArtist[1]}](https://open.spotify.com/track/{message[2]})"
+        # Create ranking with above values, then add to the leaderboard
+        ranking = Ranking(user=user, value=value)
+        leaderboard.addRanking(ranking)
 
-        embed.add_field(name=f"{loops}. {member.display_name}", value=field_value, inline=False)
-        loops += 1
-
-    await ctx.send(embed=embed)
-
+    # Send the embed
+    await sendLeaderBoardEmbed(ctx=ctx, leaderboard=leaderboard)
+    
+    # Close the connection
     conn.close()
 
 # A request that produces a leaderboard with this months hight reacted songs local to the represented playlist
@@ -379,65 +400,69 @@ async def localreactChamp(ctx):
 
             # make and send the embed
             title = f"Reaction Champions for {calendar.month_name[current_month]}"
-            embed = discord.Embed(title=title, color=0x1DB954, url=playlist['playlist'])
-            embed.description = "The top 5 highest reacted songs this month"
+            description = "The top 5 highest reacted songs this month"
+            leaderboard = Leaderboard(title=title, description=description)
 
-            loops = 1
-            guild = ctx.guild
-            for message in top_messages:
+            for result in top_messages:
                 # Get username
-                member = guild.get_member(message[3])
+                user=result[3]
 
                 # Get track name and artist(s)
-                nameAndArtist = playlist_update.get_track_name_and_artist(message[2])
+                nameAndArtist = playlist_update.get_track_name_and_artist(result[2])
 
-                field_value = f"{message[1]} reaction(s) - "
+                # Create reaction number, and song and artist string
+                value = f"{result[1]} reaction(s) - "
+                value += f"[{nameAndArtist[0]} - {nameAndArtist[1]}](https://open.spotify.com/track/{result[2]})"
 
-                field_value += f"[{nameAndArtist[0]} - {nameAndArtist[1]}](https://open.spotify.com/track/{message[2]})"
+                # Create ranking with above values, then add to the leaderboard
+                ranking = Ranking(user=user, value=value)
+                leaderboard.addRanking(ranking)
 
-                embed.add_field(name=f"{loops}. {member.display_name}", value=field_value, inline=False)
-                loops += 1
-
-            await ctx.send(embed=embed)
+            await sendLeaderBoardEmbed(ctx=ctx, leaderboard=leaderboard)
 
             conn.close()
 
 # Using the result from an SQL querey, an embed is created and sent
-async def sendLeaderBoardEmbed(ctx, results, title):
-    userIDs = [row[0] for row in results]
+async def sendLeaderBoardEmbed(ctx, leaderboard):
+    # Getting rankigns
+    rankings = Leaderboard.getRankings(leaderboard)
+
     usernames = {}
     guild = ctx.guild
     # For each user ID in the results get the username
-    for userID in userIDs:
+    for ranking in rankings:
         try:
-            member = guild.get_member(userID)
+            member = guild.get_member(Ranking.getUser(ranking))
             if member is None:
-                print(f"Debug: Fetching member {userID}")
-                member = await guild.fetch_member(userID)
+                print(f"Debug: Fetching member {Ranking.getUser(ranking)}")
+                member = await guild.fetch_member(Ranking.getUser(ranking))
             
             # Attempt to get the display name, if not available get the name
             if member.display_name:
-                usernames[userID] = member.display_name
+                usernames[Ranking.getUser(ranking)] = member.display_name
             else:
-                usernames[userID] = member.name
+                usernames[Ranking.getUser(ranking)] = member.name
 
         except discord.NotFound:
-            usernames[userID] = "Unknown User"
+            usernames[Ranking.getUser(ranking)] = "Unknown User"
 
     # Create the embed
-    embed = discord.Embed(title=title, color=0x1DB954)
-    embed.description = "The top 10 users who have sent the most songs:"
+    embed = discord.Embed(title=Leaderboard.getTitle(leaderboard), color=0x1DB954)
+    if(Leaderboard.getDescription(leaderboard)):
+        embed.description = Leaderboard.getDescription(leaderboard)
 
     loops = 1
 
-    for row in results:
-        if loops != 10:
-            discord_id, song_count = row
+    for ranking in rankings:
+        # Make sure not to add more than 10 ranks
+        if loops <= 10:
+            discord_id = Ranking.getUser(ranking)
+            song_count = Ranking.getValue(ranking)
             username = usernames.get(discord_id, "Unknown")
             
             # Add the new information to the response
             # response += (f"\n{username:8s} | {song_count:15d}")
-            embed.add_field(name=f"{loops}. {username}", value=f"{song_count} songs", inline=False)
+            embed.add_field(name=f"{loops}. {username}", value=f"{song_count}", inline=False)
             loops += 1
         else:
             # Only print the first 10

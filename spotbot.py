@@ -266,7 +266,7 @@ async def thismonth(ctx):
     # Fetch all
     results = cur.fetchall()
 
-    # Creat leaderboard object
+    # Create leaderboard object
     title="This Months Stats"
     description = "The top 10 users who have sent the most songs this month:"
     leaderboard = Leaderboard(title=title, description=description)

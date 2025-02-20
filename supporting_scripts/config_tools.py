@@ -29,7 +29,6 @@ def time_now():
 
 def logs(message, log_file = r'logs/default.log', pgrm_signature = __file__):
     pgrm_signature = file_name(pgrm_signature)
-    print(message + "signature: " + pgrm_signature)
 
     now = time_now()
 

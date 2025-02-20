@@ -183,7 +183,7 @@ def refresh_the_token(client_id, client_secret):
         response = requests.post('https://accounts.spotify.com/api/token', data=data, headers=headers) #sends request off to spotify
 
         if(response.status_code == 200): #checks if request was valid
-            print(pgrm_signature + "The request to went through we got a status 200; Spotify token refreshed")
+            print(pgrm_signature + "Requested Spotify token refresh")
             response_json = response.json()
             new_expire = response_json['expires_in']
             print(pgrm_signature + "the time left on new token is: "+ str(new_expire / 60) + "min") #says how long
@@ -214,8 +214,6 @@ def refresh_sp(init_spotify_flag):
     # is_expried = (math >= (expires_in - 200)) #checks to see if the time now is greater than or less to 60min slightly 120 less than the 60 sec mark
 
     time_left = (math * -1) #finds out how much time is left on the token
-
-    print(pgrm_signature + "the time left on the token is: "+ str(time_left / 60) + "min")
     
     if(int(time_left) < 2): #if token is 2 min away from expiring
         refreshed_info = refresh_the_token(client_id=client_id, client_secret=client_secret)

@@ -17,7 +17,7 @@ import database_tools
 import supporting_scripts.config_tools as config_tools
 import supporting_scripts.channel_tools as channel_tools
 import time
-pgrm_signature = "spotbot.py: "
+pgrm_signature = "spotbot.py"
 
 # Define the setup JSON
 SECRET_DATABASE = 'setup.json'
@@ -51,9 +51,9 @@ async def on_ready(bot=bot):
             channel = int(channel_item['channel'])
             channel_ctx = bot.get_channel(channel)
             if channel_ctx is not None:
-                    await channel_ctx.send("Bot is now online! Validating messages, DO NOT SEND ANY COMMANDS TO SPOTBOT DURING THIS TIME UNTIL COMPLETE MESSAGE IS SENT!")  # Message to send on startup
+                    await channel_ctx.send("Bot is now online! Validating messages.")  # Message to send on startup
                     songs = await search_past(enabled=True, ctx=channel_ctx, channel=channel, bot=bot)
-                    await channel_ctx.send("COMPLETE: Validated lost songs! Songs added from channel was: " + str(len(songs)))  # Message to send on startup
+                    await channel_ctx.send(f"Complete: Validated lost songs! {str(len(songs))} songs added.")  # Message to send on startup
                     check_past_ran = True
             else:
                 print("Channel not found. Please check the channel | ID:" + channel)
@@ -177,12 +177,6 @@ async def r(ctx):
     conn = sqlite3.connect('databases/spotbot.db')
     cur = conn.cursor()
 
-    # Get the number of total songs in the playlist
-    cur.execute('SELECT COUNT(*) FROM songs')
-    count = cur.fetchone()[0]
-
-    print(f"There are {count} song IDs in the songs table.")
-
     # Get all spotify_IDs from the songs table
     cur.execute('SELECT spotify_ID FROM songs')
     spotify_ids = [row[0] for row in cur.fetchall()]
@@ -192,7 +186,7 @@ async def r(ctx):
         # get a random id
         random_song = random.choice(spotify_ids)
         link = f"https://open.spotify.com/track/{random_song}"
-        print(f"The random song you got was: {link}")
+        print(f"Random song retrieved: {link}")
         await ctx.reply(f"The random song you got was: {link}")
     else: # if there are no songs
         print(f"There are no songs yet.")
@@ -480,12 +474,12 @@ async def sendLeaderBoardEmbed(ctx, leaderboard):
 @bot.command()
 async def grabPast(ctx):
     channel_id = ctx.channel.id
-    await ctx.reply("Grabbing songs now please wait until FINISHED is sent\nGrabbing & Flitering Past Messages (this could take a while).....")                
+    await ctx.reply("Grabbing songs now please wait until **finished** is sent. this could take a while...")                
 
     pastSongMsgList = await search_past(bot=bot, ctx=ctx, enabled=True, channel=channel_id)
 
     # send a success after the loop
-    await ctx.send("Messages Grabbed, Process Complete, FINISHED: " + str(len(pastSongMsgList)) +" new songs were found with grabPast" + "\nHere is the Spotify Link: ")
+    await ctx.send("Messages Grabbed, Process Complete, **finished**: " + str(len(pastSongMsgList)) +" new songs were found with grabPast")
     await sLink(ctx)
         
     update_gp_flag()
@@ -568,8 +562,10 @@ async def on_message(msg):
 
 
         else:
-            print(pgrm_signature + "Not valid Spotify channel or spotify link in: " + str(msg.channel.id) + " | spotbot looking at channels: " + str(channels))
             await bot.process_commands(msg)
+
+    else:
+        print(pgrm_signature + "Not valid Spotify channel or spotify link in: " + str(msg.channel.id) + " | spotbot looking at channels: " + str(channels))
 
 
 @bot.command()
@@ -612,14 +608,14 @@ async def fetch_message_history(channel_ID):
         except discord.errors.Forbidden:
             print(f"Bot does not hav epermission to acces channel{channel_ID}")
     
-    print(f"Channel found: {channel.name} (ID: {channel_ID}, Type: {type(channel)})")
+    print(f"Grabbing Past in {channel.name}")
 
     if not isinstance(channel, discord.TextChannel):
         print(f"Channel {channel_ID} is not a text channel.")
     
     try:
         messages = [message async for message in channel.history(limit=500000)]
-        print(f"Successfully fetched {len(messages)} messages from channel {channel.id}")
+        print(f"Successfully fetched {len(messages)} messages")
     except discord.errors.Forbidden:
         print(f"Bot doesn't have permission to read message history in channel {channel.id}")
     except Exception as e:
@@ -719,7 +715,7 @@ async def search_past(ctx, bot, enabled=False, channel=""):
         # database_tools.add_song_2_db(msg=msg, songlink=songlink)
 
         config_tools.logs("Grabbed past messages", log_file=r'logs/channel_tools.log')
-        print("Past finished searching for channel " + str(channel))
+        print(f"Search finished for channel {bot.get_channel(channel_ID).name}")
         return raw_track_list
 
 #checks for duplicates before sending songs off to uri.txt and recording in database
@@ -746,7 +742,7 @@ def dupCheck(msg, spotify_id, playlist_link, autoAdd2DB = True):
     else: # If a match is not found
         # Add the song ID into the database
         if(autoAdd2DB == True):
-            print(pgrm_signature + 'NEW! | String', songlink , 'Not Found')
+            print(pgrm_signature + ': NEW! | String', songlink , 'Not Found')
             cur.execute("INSERT INTO songs (spotify_ID, playlist_ID, sender_ID, timestamp, discord_message_id) VALUES (?, ?, ?, ?, ?)", 
                         (spotify_id, playlist_ID, getSender(msg), getTimestamp(msg), getMessageID(msg)))
             conn.commit()
@@ -831,8 +827,6 @@ def update_gp_flag():
             json.dump(dictObj, json_file, 
                         indent=4,  
                         separators=(',',': '))
-    
-        print(pgrm_signature + 'Successfully updated setup.json')
  
 # Get the message sender data
 def getSender(msg):

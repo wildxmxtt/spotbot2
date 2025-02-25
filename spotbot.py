@@ -639,11 +639,11 @@ async def search_past(ctx, bot, enabled=False, channel=""):
 
         # to make it work with only one file, surprisingly all the playlist file handling is done in dupCheck()
         raw_track_list = []
-        for msg in messages:
+        for msg in reversed(messages):
             try:
                 # Extract Spotify ID from message
-                song = Song(msg.content)
-                spotify_id = config_tools.getSpotifyID(Song.getSong(Song))
+                spotify_id = config_tools.getSpotifyID(msg.content)
+                song = Song(spotify_id)
 
                 # Checks if message is valid before proceding
                 msg_valid = channel_tools.msg_validity_check(msg, bot)
@@ -657,6 +657,7 @@ async def search_past(ctx, bot, enabled=False, channel=""):
                 
                     # If the song is not a duplicate, add song to the raw_track_list to be sent off
                     if test == False:
+                        Song.addSongToDatabase(song, playlistID=playlistID, sender=getSender(msg), time=getTimestamp(msg), messageID=getMessageID(msg))
                         raw_track_list.append(spotify_id)
                                 
             except discord.NotFound:

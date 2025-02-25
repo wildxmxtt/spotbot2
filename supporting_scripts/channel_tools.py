@@ -34,9 +34,8 @@ def check_channels_on_boot(enabled=False, startup_flag=False, playlist_w_channel
     else:
         return
 
-
-#grab past ish
-
+async def is_bot_message(msg):
+    return msg.author.bot
 
 async def search_pastOLD(ctx, enabled=False, channel=""):
     if(enabled == True):

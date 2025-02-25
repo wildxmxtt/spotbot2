@@ -637,7 +637,6 @@ async def search_past(ctx, bot, enabled=False, channel=""):
         messages = await fetch_message_history(channel_ID=channel_ID)
         # messages = [messages async for messages in ctx.history(limit=500000)] #If your bot is not reading all of your messages this number may have to be higher 500000
 
-        # to make it work with only one file, surprisingly all the playlist file handling is done in dupCheck()
         raw_track_list = []
         for msg in reversed(messages):
             try:
@@ -710,40 +709,6 @@ async def search_past(ctx, bot, enabled=False, channel=""):
         config_tools.logs("Grabbed past messages", log_file=r'logs/channel_tools.log')
         print(f"Search finished for channel {bot.get_channel(channel_ID).name}")
         return raw_track_list
-
-#checks for duplicates before sending songs off to uri.txt and recording in database
-def dupCheck(msg, spotify_id, playlist_link, autoAdd2DB = True):
-    songlink = playlist_update.song_link_extract(msg)
-    
-    # opening a text files (new)
-    conn = sqlite3.connect('databases/spotbot.db')
-    cur = conn.cursor()
-
-    # Attempt to select spotify_ID
-    # input sanitization - https://realpython.com/prevent-python-sql-injection/
-    # Check if there is a song id in the specified playlist
-    playlist_ID = config_tools.getSpotifyID(playlist_link)['id']
-    cur.execute("SELECT spotify_ID FROM songs WHERE spotify_ID = ? AND playlist_ID = ? LIMIT 1", (spotify_id,playlist_ID,))
-    matches = cur.fetchone()
-
-    # If a match is found
-    if matches:
-        print(f'{pgrm_signature}: Song {songlink} found In song database')
-
-        # EXIT and return true; this is infact a duplicate
-        return True
-    else: # If a match is not found
-        # Add the song ID into the database
-        if(autoAdd2DB == True):
-            print(pgrm_signature + ': NEW! | String', songlink , 'Not Found')
-            cur.execute("INSERT INTO songs (spotify_ID, playlist_ID, sender_ID, timestamp, discord_message_id) VALUES (?, ?, ?, ?, ?)", 
-                        (spotify_id, playlist_ID, getSender(msg), getTimestamp(msg), getMessageID(msg)))
-            conn.commit()
-            
-            conn.close()
-            return False
-
-
 
 
 def uritxt(link):
@@ -826,7 +791,7 @@ def getSender(msg):
     # get the sender id
     senderId = msg.author.id
 
-    # return the sender ID to be used in dupCheck to be recorded in the songs playlist
+    # return the sender ID of a message
     return senderId
 
 # returns the formatted time stamp
@@ -837,7 +802,7 @@ def getTimestamp(msg):
     # Format the timestamp as a string
     formatted_timestamp = timestamp.strftime("%Y-%m-%d %H:%M:%S")
 
-    # return the sender ID to be used in dupCheck to be recorded in the songs playlist
+    # return the timestamp of a sent message
     return formatted_timestamp
 
 # Returns the message ID of a msg
@@ -845,7 +810,7 @@ def getMessageID(msg):
     # Get the ID for the message on discord
     message_id = str(msg.id)
 
-    # return the sender ID to be used in dupCheck to be recorded in the songs playlist
+    # return the message id of a Discord message
     return message_id
 
 # Initialize the database if not created yet

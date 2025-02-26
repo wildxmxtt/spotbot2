@@ -30,10 +30,9 @@ async def sendOff(msg, spotify_id=None, tracks=None, batch_send = False):
     
     config_data = config_tools.config_data(SECRET_DATABASE)
     playlist_channel = (config_data['playlist_channel'])
-    init_spotify_flag = config_data['init_spotify_flag']
 
     # Keeps the user from having to get a new token manually every hour
-    sp = refresh_sp(init_spotify_flag)
+    sp = refresh_sp()
 
     # Get the playlist link associated with the channel
     playlist_link = channel_tools.return_playlist(sent_channel=msg.channel.id, playlist_channel=playlist_channel)
@@ -42,7 +41,7 @@ async def sendOff(msg, spotify_id=None, tracks=None, batch_send = False):
     playlist_ID = config_tools.getSpotifyID(playlist_link)
 
     # add the song to the playlist using the SP object
-    sp.playlist_add_items(playlist_ID['id'], tracks)
+    sp.playlist_add_items(playlist_ID, tracks)
     config_tools.logs(message=f'{pgrm_signature}: Playlist update {playlist_link} was sent and went through!')
     return f'{pgrm_signature}: Playlist update {playlist_link} was sent and went through!'
 
@@ -195,7 +194,7 @@ def refresh_the_token(client_id, client_secret):
             # return TOKEN #last ditch to try and make it work if TOKEN varaible is still active
 
 
-def refresh_sp(init_spotify_flag): 
+def refresh_sp(): 
     #get default config data
     config_data = config_tools.config_data('setup.json')
     client_id = (config_data['client_id'])

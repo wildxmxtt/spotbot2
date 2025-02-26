@@ -50,23 +50,12 @@ def getSpotifyID(url):
 
     for pattern in patterns:
         match = re.search(pattern, url)
-        if match:
-            if len(match.groups()) == 2: # if both the content_type and spotify_id
-                content_type, spotify_id = match.groups()
-            else: # if only spotify
-                content_type = None
-                spotify_id = match.group(1)
+        if match: # If spotify ID found return
+            return match.group(2)
+            
 
-            return {
-                'type': content_type,
-                'id': spotify_id
-            }
-
-    # return none if spotify_ID not found
-    return {
-        'type': None,
-        'id': None
-    }
+    # If no spotify ID found return None
+    return None
 
 
 def validate_spotify_uris(uri_list, min_length=20, max_length=25):
